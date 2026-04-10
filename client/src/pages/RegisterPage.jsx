@@ -20,24 +20,24 @@ const Spinner = ({ size = 'sm', color = 'blue' }) => (
 //  RegisterPage
 // ══════════════════════════════════════════════════════════════════════════════
 const RegisterPage = () => {
-    const [name, setName]                   = useState('');
-    const [userType, setUserType]           = useState('student');
-    const [email, setEmail]                 = useState('');
-    const [password, setPassword]           = useState('');
+    const [name, setName] = useState('');
+    const [userType, setUserType] = useState('student');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [vehicleNumber, setVehicleNumber] = useState('');
-    const [showPassword, setShowPassword]   = useState(false);
-    const [showConfirm, setShowConfirm]     = useState(false);
-    const [error, setError]                 = useState('');
-    const [success, setSuccess]             = useState(false);
-    const [submitting, setSubmitting]       = useState(false);
-    const { register, user }                = useAuth();
-    const navigate                          = useNavigate();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const { register, user } = useAuth();
+    const navigate = useNavigate();
 
     // — Email check logic —
-    const [emailStatus, setEmailStatus]     = useState(null);
-    const [emailMsg, setEmailMsg]           = useState('');
-    const debounceTimer                     = useRef(null);
+    const [emailStatus, setEmailStatus] = useState(null);
+    const [emailMsg, setEmailMsg] = useState('');
+    const debounceTimer = useRef(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -70,8 +70,8 @@ const RegisterPage = () => {
 
     const emailBorderClass =
         emailStatus === 'available' ? 'border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500/15' :
-        emailStatus === 'taken' || emailStatus === 'invalid' ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15' :
-        'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15';
+            emailStatus === 'taken' || emailStatus === 'invalid' ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15' :
+                'border-slate-200 focus:border-blue-500 focus:ring-blue-500/15';
 
     // — Email change handler —
     const handleEmailChange = (e) => {
@@ -110,16 +110,16 @@ const RegisterPage = () => {
         <div className="min-h-screen bg-white flex overflow-hidden">
             {/* Main Premium Layout */}
             <div className="w-full flex min-h-screen">
-                
+
                 {/* ── Left side: Immersive Branding (Desktop Only) ── */}
                 <div className="hidden lg:flex lg:w-[45%] xl:w-[40%] bg-slate-950 overflow-hidden relative p-12 flex-col justify-between group h-screen">
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-indigo-600/20 animate-pulse" />
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
-                    
+
                     {/* Floating Glows */}
                     <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] group-hover:bg-blue-600/30 transition-colors duration-700" />
                     <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] group-hover:bg-indigo-600/30 transition-colors duration-700" />
-                    
+
                     <Link to="/" className="relative z-10 flex items-center gap-3">
                         <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 border border-blue-400/20">
                             <FaParking className="text-white text-xl" />
@@ -133,7 +133,7 @@ const RegisterPage = () => {
                             Live Campus Parking System
                         </div>
                         <h1 className="text-6xl font-black text-white leading-[1.1] tracking-tight">
-                            Smart Access.<br/>
+                            Smart Access.<br />
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Seamless</span> Parking.
                         </h1>
                         <p className="text-slate-400 text-lg leading-relaxed font-light max-w-md">
@@ -161,7 +161,7 @@ const RegisterPage = () => {
 
                 {/* ── Right side: Interaction Area ── */}
                 <div className="flex-1 flex flex-col items-center justify-start py-12 px-6 sm:px-12 md:px-20 lg:px-24 overflow-y-auto h-screen custom-scrollbar bg-white">
-                    
+
                     {success ? (
                         /* SUCCESS STATE */
                         <div className="w-full max-w-md space-y-8 py-12 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -170,7 +170,7 @@ const RegisterPage = () => {
                             </div>
                             <div className="space-y-3">
                                 <h2 className="text-4xl font-black text-slate-900 leading-tight tracking-tight">
-                                    Registration <br/><span className="text-emerald-600">Successful!</span>
+                                    Registration <br /><span className="text-emerald-600">Successful!</span>
                                 </h2>
                                 <p className="text-slate-500 font-medium text-lg leading-relaxed">
                                     Your account for <span className="text-slate-800 font-bold">{email}</span> has been created and is now <span className="text-blue-600 font-black">pending admin approval.</span>
@@ -229,17 +229,16 @@ const RegisterPage = () => {
                                         {[
                                             { id: 'student', label: 'Student', icon: <FaShieldAlt className="rotate-180" /> },
                                             { id: 'teacher', label: 'Teacher', icon: <FaShieldAlt className="scale-110" /> },
-                                            { id: 'guard',   label: 'Guard',   icon: <FaShieldAlt /> }
+                                            { id: 'guard', label: 'Guard', icon: <FaShieldAlt /> }
                                         ].map((role) => (
                                             <button
                                                 key={role.id}
                                                 type="button"
                                                 onClick={() => setUserType(role.id)}
-                                                className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 gap-2 ${
-                                                    userType === role.id
+                                                className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 gap-2 ${userType === role.id
                                                         ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 ring-4 ring-blue-500/5'
                                                         : 'bg-white border-slate-100 text-slate-500 hover:border-slate-300 hover:bg-slate-50 shadow-sm'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className={`text-xl ${userType === role.id ? 'text-white' : 'text-slate-400'}`}>
                                                     {role.icon}
@@ -268,11 +267,10 @@ const RegisterPage = () => {
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Email Address</label>
                                         <div className="relative group">
-                                            <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors text-sm ${
-                                                emailStatus === 'available' ? 'text-emerald-500' :
-                                                emailStatus === 'invalid' || emailStatus === 'taken' ? 'text-red-500' :
-                                                'text-slate-400 group-focus-within:text-blue-500'
-                                            }`}><FaEnvelope /></div>
+                                            <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors text-sm ${emailStatus === 'available' ? 'text-emerald-500' :
+                                                    emailStatus === 'invalid' || emailStatus === 'taken' ? 'text-red-500' :
+                                                        'text-slate-400 group-focus-within:text-blue-500'
+                                                }`}><FaEnvelope /></div>
                                             <input type="email" required
                                                 className={`w-full pl-11 pr-10 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 transition-all font-semibold text-slate-800 focus:bg-white placeholder:text-slate-300 placeholder:font-normal shadow-sm text-sm ${emailBorderClass}`}
                                                 value={email} onChange={handleEmailChange}
@@ -284,11 +282,10 @@ const RegisterPage = () => {
                                             </div>
                                         </div>
                                         {emailMsg && (
-                                            <p className={`text-[11px] mt-1.5 ml-2 font-bold ${
-                                                emailStatus === 'available' ? 'text-emerald-600' :
-                                                emailStatus === 'taken' || emailStatus === 'invalid' ? 'text-red-500' :
-                                                'text-slate-400'
-                                            }`}>{emailMsg}</p>
+                                            <p className={`text-[11px] mt-1.5 ml-2 font-bold ${emailStatus === 'available' ? 'text-emerald-600' :
+                                                    emailStatus === 'taken' || emailStatus === 'invalid' ? 'text-red-500' :
+                                                        'text-slate-400'
+                                                }`}>{emailMsg}</p>
                                         )}
                                     </div>
 
@@ -333,15 +330,13 @@ const RegisterPage = () => {
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Confirm Password</label>
                                         <div className="relative group">
-                                            <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors text-sm ${
-                                                passwordsMatch ? 'text-emerald-500' : passwordMismatch ? 'text-red-500' : 'text-slate-400 group-focus-within:text-blue-500'
-                                            }`}><FaLock /></div>
+                                            <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors text-sm ${passwordsMatch ? 'text-emerald-500' : passwordMismatch ? 'text-red-500' : 'text-slate-400 group-focus-within:text-blue-500'
+                                                }`}><FaLock /></div>
                                             <input type={showConfirm ? "text" : "password"} required
-                                                className={`w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 transition-all focus:bg-white font-semibold text-slate-800 placeholder:text-slate-300 placeholder:font-normal shadow-sm text-sm ${
-                                                    passwordsMatch ? 'border-emerald-400 focus:ring-emerald-500/10' :
-                                                    passwordMismatch ? 'border-red-400 focus:ring-red-500/10' :
-                                                    'border-slate-100 focus:border-blue-500 focus:ring-blue-500/10'
-                                                }`}
+                                                className={`w-full pl-11 pr-12 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 transition-all focus:bg-white font-semibold text-slate-800 placeholder:text-slate-300 placeholder:font-normal shadow-sm text-sm ${passwordsMatch ? 'border-emerald-400 focus:ring-emerald-500/10' :
+                                                        passwordMismatch ? 'border-red-400 focus:ring-red-500/10' :
+                                                            'border-slate-100 focus:border-blue-500 focus:ring-blue-500/10'
+                                                    }`}
                                                 value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                                                 placeholder="Repeat password" />
                                             <button type="button" onClick={() => setShowConfirm(!showConfirm)}

@@ -10,7 +10,7 @@ import {
 // ── Scooter SVG ───────────────────────────────────────────────────────────────
 const ScooterIcon = () => (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-        <path d="M19 8h-1.26c-.19-.73-.51-1.4-.92-2H17c.55 0 1-.45 1-1s-.45-1-1-1h-2.74C12.79 2.82 11.46 2 10 2C7.24 2 5 4.24 5 7c0 .34.04.67.1 1H3c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1h.28c-.18.46-.28.95-.28 1.5C3 15.43 4.57 17 6.5 17c1.76 0 3.22-1.3 3.46-3H13v1c0 .55.45 1 1 1h1c0 1.11.89 2 2 2s2-.89 2-2c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1z"/>
+        <path d="M19 8h-1.26c-.19-.73-.51-1.4-.92-2H17c.55 0 1-.45 1-1s-.45-1-1-1h-2.74C12.79 2.82 11.46 2 10 2C7.24 2 5 4.24 5 7c0 .34.04.67.1 1H3c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1h.28c-.18.46-.28.95-.28 1.5C3 15.43 4.57 17 6.5 17c1.76 0 3.22-1.3 3.46-3H13v1c0 .55.45 1 1 1h1c0 1.11.89 2 2 2s2-.89 2-2c.55 0 1-.45 1-1V9c0-.55-.45-1-1-1z" />
     </svg>
 );
 
@@ -53,9 +53,9 @@ const ToastContainer = ({ toasts, onDismiss }) => (
                 className={`flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl shadow-2xl text-white text-sm font-semibold pointer-events-auto
                     transition-all duration-300 animate-[slideIn_0.3s_ease-out]
                     ${t.type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500'
-                    : t.type === 'error' ? 'bg-gradient-to-r from-red-500 to-rose-500'
-                    : t.type === 'info' ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
-                    : 'bg-gradient-to-r from-amber-400 to-orange-500'}`}
+                        : t.type === 'error' ? 'bg-gradient-to-r from-red-500 to-rose-500'
+                            : t.type === 'info' ? 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                                : 'bg-gradient-to-r from-amber-400 to-orange-500'}`}
                 style={{ backdropFilter: 'blur(10px)', minWidth: '240px' }}
             >
                 <span className="text-base">
@@ -516,8 +516,8 @@ const GuardDashboard = () => {
                                                 ${statusFilter === f
                                                     ? f === 'Occupied' ? 'bg-blue-500 text-white shadow-sm shadow-blue-200'
                                                         : f === 'Expired' ? 'bg-red-500 text-white shadow-sm shadow-red-200'
-                                                        : f === 'Awaiting' ? 'bg-amber-400 text-white shadow-sm shadow-amber-200'
-                                                        : 'bg-slate-800 text-white shadow-sm'
+                                                            : f === 'Awaiting' ? 'bg-amber-400 text-white shadow-sm shadow-amber-200'
+                                                                : 'bg-slate-800 text-white shadow-sm'
                                                     : 'bg-white text-slate-500 border border-slate-200 hover:border-slate-300'}`}
                                         >
                                             {f}
@@ -712,8 +712,8 @@ const GuardDashboard = () => {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className="hidden sm:flex items-center gap-4 bg-white/20 rounded-2xl px-5 py-2.5">
-                                                {[['Free', zoneSlots.filter(s => getSlotStatus(s) === 'free').length, 'text-emerald-300'], 
-                                                  ['Active', zoneSlots.filter(s => getSlotStatus(s) !== 'free').length, 'text-red-300']].map(([l, v, c]) => (
+                                                {[['Free', zoneSlots.filter(s => getSlotStatus(s) === 'free').length, 'text-emerald-300'],
+                                                ['Active', zoneSlots.filter(s => getSlotStatus(s) !== 'free').length, 'text-red-300']].map(([l, v, c]) => (
                                                     <div key={l} className="text-center">
                                                         <p className="text-xl font-black text-white leading-tight">{v}</p>
                                                         <p className={`text-[10px] font-bold uppercase tracking-wider ${c}`}>{l}</p>
@@ -725,7 +725,7 @@ const GuardDashboard = () => {
 
                                     {/* Grid Filters */}
                                     <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap gap-4 items-center">
-                                         <div className="flex items-center gap-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                                        <div className="flex items-center gap-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Free</span>
                                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Reserved</span>
                                             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Occupied</span>
@@ -810,7 +810,7 @@ const GuardDashboard = () => {
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <h3 className="font-black text-xl text-slate-800 tracking-tight uppercase leading-tight">{log.vehicleNumber}</h3>
                                                         <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                                           {log.booking?.vehicleType || 'Vehicle'}
+                                                            {log.booking?.vehicleType || 'Vehicle'}
                                                         </span>
                                                         {log.booking?.user && (
                                                             <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
@@ -818,7 +818,7 @@ const GuardDashboard = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    
+
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1">
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Slot</span>
@@ -834,7 +834,7 @@ const GuardDashboard = () => {
                                                                 <span className="text-xs font-bold text-slate-600">{new Date(log.exitTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                             </div>
                                                         )}
-                                                         <div className="flex items-center gap-1.5">
+                                                        <div className="flex items-center gap-1.5">
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Guard</span>
                                                             <span className="text-xs font-medium text-slate-500 italic">{log.guard?.name || 'System'}</span>
                                                         </div>
@@ -881,7 +881,7 @@ const GuardDashboard = () => {
                     onClick={() => { setSelectedMapSlot(null); setSlotDetail(null); }}>
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-modal-in overflow-hidden border border-slate-100"
                         onClick={e => e.stopPropagation()}>
-                        
+
                         <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between">
                             <div>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Slot Occupant Info</p>

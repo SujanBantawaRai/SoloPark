@@ -227,8 +227,8 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                                     type="button"
                                     onClick={() => setVehicleType(opt.value)}
                                     className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 font-bold text-sm transition-all ${vehicleType === opt.value
-                                            ? 'border-blue-500 bg-blue-50 text-blue-600 shadow-sm'
-                                            : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-600 shadow-sm'
+                                        : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
                                         }`}
                                 >
                                     <span className="text-xl">{opt.icon}</span>
@@ -528,16 +528,24 @@ const StudentDashboard = () => {
                 {/* ── Stats Row ── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     {[
-                        { label: 'Total Slots', value: totalSlots, icon: <Icons.Stats />, color: 'text-indigo-600 bg-indigo-50', 
-                          action: () => zonesRef.current?.scrollIntoView({ behavior: 'smooth' }) },
-                        { label: 'Available', value: totalFree, icon: <Icons.Check />, color: 'text-emerald-600 bg-emerald-50',
-                          action: () => zonesRef.current?.scrollIntoView({ behavior: 'smooth' }) },
-                        { label: 'Reserved', value: totalReserved, icon: <Icons.Clock />, color: 'text-amber-500 bg-amber-50',
-                          action: () => reservationRef.current?.scrollIntoView({ behavior: 'smooth' }) },
-                        { label: 'Occupied', value: totalOccupied, icon: <Icons.Parking />, color: 'text-red-500 bg-red-50',
-                          action: () => reservationRef.current?.scrollIntoView({ behavior: 'smooth' }) },
+                        {
+                            label: 'Total Slots', value: totalSlots, icon: <Icons.Stats />, color: 'text-indigo-600 bg-indigo-50',
+                            action: () => zonesRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        },
+                        {
+                            label: 'Available', value: totalFree, icon: <Icons.Check />, color: 'text-emerald-600 bg-emerald-50',
+                            action: () => zonesRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        },
+                        {
+                            label: 'Reserved', value: totalReserved, icon: <Icons.Clock />, color: 'text-amber-500 bg-amber-50',
+                            action: () => reservationRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        },
+                        {
+                            label: 'Occupied', value: totalOccupied, icon: <Icons.Parking />, color: 'text-red-500 bg-red-50',
+                            action: () => reservationRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        },
                     ].map((s, i) => (
-                        <div key={i} 
+                        <div key={i}
                             onClick={s.action}
                             className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-95`}>
                             <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>{s.icon}</div>

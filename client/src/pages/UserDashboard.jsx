@@ -111,8 +111,8 @@ const UserDashboard = () => {
                                                 <p className="text-sm text-gray-600 font-mono">{booking.vehicleNumber}</p>
                                             </div>
                                             <span className={`px-2 py-1 rounded text-xs capitalize ${booking.status === 'active' ? 'bg-green-100 text-green-800' :
-                                                    booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                                        'bg-red-100 text-red-800'
+                                                booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-red-100 text-red-800'
                                                 }`}>
                                                 {booking.status}
                                             </span>

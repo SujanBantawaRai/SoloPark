@@ -4,8 +4,22 @@ import { useAuth } from '../context/AuthContext';
 import {
     FaUsers, FaCar, FaClock, FaPlus, FaTrash, FaChartLine,
     FaUserShield, FaUserMinus, FaSync, FaCheckCircle, FaTimesCircle,
-    FaTimes, FaHistory, FaExclamationTriangle, FaLock
+    FaTimes, FaHistory, FaExclamationTriangle, FaLock,
+    FaCalendarDay, FaBolt, FaHourglass, FaMapMarkerAlt, FaChartBar, FaFire
 } from 'react-icons/fa';
+
+// ── Analytics Components ───────────────────────────────────────────────────
+import StatCard             from '../components/dashboard/StatCard';
+import OccupancyChart       from '../components/dashboard/OccupancyChart';
+import SlotStatusDonut      from '../components/dashboard/SlotStatusDonut';
+import BookingTrendChart    from '../components/dashboard/BookingTrendChart';
+import EntryExitChart       from '../components/dashboard/EntryExitChart';
+import UserDistributionChart from '../components/dashboard/UserDistributionChart';
+import ActivityFeed         from '../components/dashboard/ActivityFeed';
+import LiveVehiclesTable    from '../components/dashboard/LiveVehiclesTable';
+import PendingRequestsPanel from '../components/dashboard/PendingRequestsPanel';
+import PeakHoursChart       from '../components/dashboard/PeakHoursChart';
+import TopSlotsPanel        from '../components/dashboard/TopSlotsPanel';
 
 /* ─── Badge maps (unchanged colours) ──────────────────────────────────────── */
 const ROLE_BADGE = {
@@ -68,7 +82,7 @@ const SlotDetailModal = ({ slot, onClose, onStatusUpdate, isSuperAdmin, addToast
     const [detail, setDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
-    const [confirm, setConfirm] = useState(null); // { message, action }
+    const [confirm, setConfirm] = useState(null);
 
     useEffect(() => {
         if (slot.status !== 'free') {
@@ -141,7 +155,6 @@ const SlotDetailModal = ({ slot, onClose, onStatusUpdate, isSuperAdmin, addToast
 
                     {/* Body */}
                     <div className="px-6 py-5 space-y-4">
-                        {/* Basic info */}
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div className="bg-slate-50 rounded-xl p-3">
                                 <p className="text-slate-400 font-semibold text-xs uppercase tracking-wide mb-1">Slot ID</p>
@@ -163,7 +176,6 @@ const SlotDetailModal = ({ slot, onClose, onStatusUpdate, isSuperAdmin, addToast
                             </div>
                         </div>
 
-                        {/* Booking detail */}
                         {slot.status !== 'free' && (
                             detailLoading ? (
                                 <div className="flex items-center justify-center py-6">
@@ -206,7 +218,6 @@ const SlotDetailModal = ({ slot, onClose, onStatusUpdate, isSuperAdmin, addToast
                             )
                         )}
 
-                        {/* Action buttons */}
                         <div className="flex flex-wrap gap-2 pt-1">
                             {slot.status !== 'free' && (
                                 <button
@@ -283,41 +294,47 @@ const UserDetailModal = ({ user, onClose }) => (
 const AdminDashboard = () => {
     const { user: currentUser } = useAuth();
 
-    /* Data */
-    const [stats, setStats] = useState(null);
-    const [slots, setSlots] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [logs,  setLogs]  = useState([]);
+    /* ── Core Data ─────────────────────────────────────────────────────────── */
+    const [stats, setStats]   = useState(null);
+    const [slots, setSlots]   = useState([]);
+    const [users, setUsers]   = useState([]);
+    const [logs,  setLogs]    = useState([]);
 
-    /* UI */
-    const [activeTab, setActiveTab] = useState('overview');
-    const [loading, setLoading]     = useState(true);
-    const [lastUpdated, setLastUpdated] = useState(null);
+    /* ── Analytics Data ────────────────────────────────────────────────────── */
+    const [analytics, setAnalytics]     = useState(null);
+    const [liveVehicles, setLiveVehicles] = useState([]);
+    const [activeBookings, setActiveBookings] = useState([]);
+    const [peakHours, setPeakHours]     = useState([]);
+    const [topSlots,  setTopSlots]      = useState(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
-    /* Admin Filters */
+    /* ── UI ────────────────────────────────────────────────────────────────── */
+    const [activeTab, setActiveTab]         = useState('overview');
+    const [loading, setLoading]             = useState(true);
+    const [lastUpdated, setLastUpdated]     = useState(null);
+
+    /* ── Filters ───────────────────────────────────────────────────────────── */
     const [userSearchTerm, setUserSearchTerm] = useState('');
     const [userTypeFilter, setUserTypeFilter] = useState('all');
 
-    /* Toasts */
+    /* ── Toasts ────────────────────────────────────────────────────────────── */
     const [toasts, setToasts] = useState([]);
     const toastCounter = useRef(0);
 
-    /* Activity feed */
+    /* ── Activity feed ─────────────────────────────────────────────────────── */
     const [activities, setActivities] = useState([]);
 
-    /* Modals */
+    /* ── Modals ────────────────────────────────────────────────────────────── */
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
-
-    /* Confirm dialog (global) */
     const [globalConfirm, setGlobalConfirm] = useState(null);
 
-    /* Slot form state */
+    /* ── Slot form ─────────────────────────────────────────────────────────── */
     const [newSlotNumber, setNewSlotNumber] = useState('');
     const [newSlotZone, setNewSlotZone]     = useState('Zone A');
     const [newSlotType, setNewSlotType]     = useState('student');
 
-    /* User type state */
+    /* ── User type state ───────────────────────────────────────────────────── */
     const [assigningType, setAssigningType] = useState({});
     const [savingType, setSavingType]       = useState({});
     const [promotingId, setPromotingId]     = useState(null);
@@ -337,11 +354,11 @@ const AdminDashboard = () => {
     const addActivity = useCallback((msg) => {
         setActivities(prev => [
             { msg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-            ...prev.slice(0, 9)
+            ...prev.slice(0, 14)
         ]);
     }, []);
 
-    /* ── Fetch ─────────────────────────────────────────────────────────────── */
+    /* ── Fetch core data ───────────────────────────────────────────────────── */
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
         try {
@@ -366,7 +383,42 @@ const AdminDashboard = () => {
         }
     }, [isSuperAdmin, addToast]);
 
+    /* ── Fetch analytics data ──────────────────────────────────────────────── */
+    const fetchAnalyticsData = useCallback(async () => {
+        setAnalyticsLoading(true);
+        try {
+            const analyticsReq = [
+                api.get('/reports/analytics').catch(() => ({ data: null })),
+                api.get('/reports/live').catch(() => ({ data: [] })),
+                api.get('/bookings/active').catch(() => ({ data: [] })),
+            ];
+            if (isSuperAdmin) {
+                analyticsReq.push(api.get('/reports/peak-hours').catch(() => ({ data: [] })));
+                analyticsReq.push(api.get('/reports/top-slots').catch(() => ({ data: null })));
+            }
+            const res = await Promise.all(analyticsReq);
+            setAnalytics(res[0].data);
+            setLiveVehicles(res[1].data || []);
+            setActiveBookings(res[2].data || []);
+            if (isSuperAdmin) {
+                setPeakHours(res[3]?.data || []);
+                setTopSlots(res[4]?.data || null);
+            }
+        } catch (err) {
+            console.error('Analytics fetch error', err);
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    }, [isSuperAdmin]);
+
     useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+    useEffect(() => { fetchAnalyticsData(); }, [fetchAnalyticsData]);
+
+    /* ── Combined refresh ──────────────────────────────────────────────────── */
+    const handleRefresh = useCallback(() => {
+        fetchDashboardData();
+        fetchAnalyticsData();
+    }, [fetchDashboardData, fetchAnalyticsData]);
 
     /* ── Slot handlers ─────────────────────────────────────────────────────── */
     const handleCreateSlot = async (e) => {
@@ -482,23 +534,26 @@ const AdminDashboard = () => {
         });
     };
 
-    /* ── Filtered Users Logic ───────────────────────────────────────────── */
+    /* ── Filtered Users ────────────────────────────────────────────────────── */
     const filteredUsers = users.filter(u => {
-        const matchesSearch = 
+        const matchesSearch =
             u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
             u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
             (u.vehicleNumber && u.vehicleNumber.toLowerCase().includes(userSearchTerm.toLowerCase()));
-        
-        const matchesType = 
-            userTypeFilter === 'all' || 
+        const matchesType =
+            userTypeFilter === 'all' ||
             (userTypeFilter === 'none' && !u.userType) ||
             u.userType === userTypeFilter;
-
         return matchesSearch && matchesType;
     });
 
-    /* ── Tabs — super_admin gets extra "logs" tab ──────────────────────────── */
-    const tabs = isSuperAdmin ? ['overview', 'slots', 'users', 'logs'] : ['overview', 'slots', 'users'];
+    /* ── Tabs ──────────────────────────────────────────────────────────────── */
+    const tabs = isSuperAdmin
+        ? ['overview', 'analytics', 'slots', 'users', 'logs']
+        : ['overview', 'analytics', 'slots', 'users'];
+
+    const pendingCount = users.filter(u => (!u.isApproved && u.role === 'user')).length;
+    const cardHover = 'cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg';
 
     /* ── Loading screen ────────────────────────────────────────────────────── */
     if (loading && !stats) return (
@@ -506,10 +561,6 @@ const AdminDashboard = () => {
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
         </div>
     );
-
-    /* ── Helpers ───────────────────────────────────────────────────────────── */
-    const pendingCount = users.filter(u => (!u.isApproved && u.role === 'user')).length;
-    const cardHover = 'cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg';
 
     return (
         <>
@@ -544,7 +595,7 @@ const AdminDashboard = () => {
             <div className="min-h-screen bg-slate-50 pt-8 pb-16 px-4">
                 <div className="max-w-7xl mx-auto">
 
-                    {/* ── Header ───────────────────────────────────────────── */}
+                    {/* ── Header ─────────────────────────────────────────── */}
                     <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                         <div className="flex items-center space-x-4">
                             <div className="p-3 bg-indigo-100 text-indigo-600 rounded-2xl">
@@ -565,10 +616,10 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Quick action buttons */}
+                        {/* Quick actions */}
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={fetchDashboardData}
+                                onClick={handleRefresh}
                                 disabled={loading}
                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:shadow-sm transition-all disabled:opacity-50">
                                 <FaSync className={loading ? 'animate-spin' : ''} size={13} />
@@ -587,7 +638,7 @@ const AdminDashboard = () => {
                         </div>
                     </div>
 
-                    {/* ── Pending Approvals Notification ───────────────────── */}
+                    {/* ── Pending Approvals Banner ────────────────────────── */}
                     {pendingCount > 0 && activeTab === 'overview' && (
                         <div className="mb-8 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 p-5 rounded-3xl flex items-center justify-between shadow-sm animate-fade-in group">
                             <div className="flex items-center gap-4">
@@ -607,7 +658,7 @@ const AdminDashboard = () => {
                         </div>
                     )}
 
-                    {/* ── Mini activity feed (collapsible) ─────────────────── */}
+                    {/* ── Mini Activity Feed ──────────────────────────────── */}
                     {activities.length > 0 && (
                         <details className="mb-6 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                             <summary className="px-5 py-3 text-sm font-bold text-slate-600 cursor-pointer flex items-center gap-2 select-none list-none hover:bg-slate-50 transition-colors">
@@ -627,16 +678,16 @@ const AdminDashboard = () => {
                     )}
 
                     {/* ── Tabs ────────────────────────────────────────────── */}
-                    <div className="flex space-x-2 bg-slate-200/50 p-2 rounded-2xl mb-8 w-fit backdrop-blur-sm">
+                    <div className="flex space-x-1 bg-slate-200/50 p-1.5 rounded-2xl mb-8 w-fit backdrop-blur-sm flex-wrap gap-y-1">
                         {tabs.map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`relative px-6 py-3 rounded-xl font-bold capitalize transition-all duration-300 ${activeTab === tab
+                                className={`relative px-5 py-2.5 rounded-xl font-bold capitalize transition-all duration-300 text-sm ${activeTab === tab
                                     ? 'bg-white text-blue-600 shadow-md transform scale-105'
                                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
                                 }`}>
-                                {tab === 'logs' ? 'System Logs' : tab.replace('-', ' ')}
+                                {tab === 'logs' ? 'System Logs' : tab === 'analytics' ? '📊 Analytics' : tab.replace('-', ' ')}
                                 {tab === 'users' && pendingCount > 0 && (
                                     <span className="absolute -top-1 -right-1 flex h-4 w-4">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -644,9 +695,7 @@ const AdminDashboard = () => {
                                     </span>
                                 )}
                                 {tab === 'logs' && isSuperAdmin && (
-                                    <span className="ml-1.5 text-[10px] bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded font-black">
-                                        SA
-                                    </span>
+                                    <span className="ml-1.5 text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black">SA</span>
                                 )}
                             </button>
                         ))}
@@ -656,20 +705,21 @@ const AdminDashboard = () => {
                         OVERVIEW TAB
                        ══════════════════════════════════════════════════════ */}
                     {activeTab === 'overview' && stats && (
-                        <div className="space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-6">
+                            {/* ── Original 4 cards (unchanged) ─────────── */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
                                 {/* Total Slots */}
                                 <div
                                     onClick={() => setActiveTab('slots')}
                                     title="Click to manage slots"
-                                    className={`glass-panel p-8 rounded-3xl border-l-4 border-l-blue-500 hover-lift ${cardHover}`}>
+                                    className={`glass-panel p-5 rounded-2xl border-l-4 border-l-blue-500 hover-lift ${cardHover}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-2">Total Slots</p>
-                                            <p className="text-5xl font-black text-slate-800">{stats.slots.total}</p>
+                                            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mb-1 opacity-70">Total Slots</p>
+                                            <p className="text-2xl font-black text-slate-800 tracking-tight">{stats.slots.total}</p>
                                         </div>
-                                        <div className="p-4 bg-blue-50 text-blue-500 rounded-2xl"><FaCar size={28} /></div>
+                                        <div className="p-2.5 bg-blue-50 text-blue-500 rounded-xl shadow-sm"><FaCar size={18} /></div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
                                         <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">{stats.slots.free} Free</span>
@@ -684,13 +734,13 @@ const AdminDashboard = () => {
                                 <div
                                     onClick={() => setActiveTab('slots')}
                                     title="Click to view active slots"
-                                    className={`glass-panel p-8 rounded-3xl border-l-4 border-l-emerald-500 hover-lift ${cardHover}`}>
+                                    className={`glass-panel p-6 rounded-2xl border-l-4 border-l-emerald-500 hover-lift ${cardHover}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-2">Live Parkings</p>
-                                            <p className="text-5xl font-black text-slate-800">{stats.activeParkings}</p>
+                                            <p className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Live Parkings</p>
+                                            <p className="text-3xl font-black text-slate-800">{stats.activeParkings}</p>
                                         </div>
-                                        <div className="p-4 bg-emerald-50 text-emerald-500 rounded-2xl"><FaClock size={28} /></div>
+                                        <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl"><FaClock size={20} /></div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-slate-100">
                                         <span className="text-slate-400 text-xs font-medium">Currently occupied vehicles</span>
@@ -701,13 +751,13 @@ const AdminDashboard = () => {
                                 <div
                                     onClick={() => isSuperAdmin ? setActiveTab('logs') : setActiveTab('slots')}
                                     title={isSuperAdmin ? 'Click to view system logs' : 'Click to view slots'}
-                                    className={`glass-panel p-8 rounded-3xl border-l-4 border-l-purple-500 hover-lift ${cardHover}`}>
+                                    className={`glass-panel p-6 rounded-2xl border-l-4 border-l-purple-500 hover-lift ${cardHover}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-2">Total Logged</p>
-                                            <p className="text-5xl font-black text-slate-800">{stats.bookings.total}</p>
+                                            <p className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Total Logged</p>
+                                            <p className="text-3xl font-black text-slate-800">{stats.bookings.total}</p>
                                         </div>
-                                        <div className="p-4 bg-purple-50 text-purple-500 rounded-2xl"><FaChartLine size={28} /></div>
+                                        <div className="p-3 bg-purple-50 text-purple-500 rounded-xl"><FaChartLine size={20} /></div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-slate-100">
                                         <span className="text-purple-600 font-bold">{stats.bookings.today}</span>{' '}
@@ -719,13 +769,13 @@ const AdminDashboard = () => {
                                 <div
                                     onClick={() => setActiveTab('users')}
                                     title="Click to manage users"
-                                    className={`glass-panel p-8 rounded-3xl border-l-4 border-l-orange-500 hover-lift ${cardHover}`}>
+                                    className={`glass-panel p-6 rounded-2xl border-l-4 border-l-orange-500 hover-lift ${cardHover}`}>
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <p className="text-slate-500 font-bold uppercase tracking-wider text-sm mb-2">Platform Users</p>
-                                            <p className="text-5xl font-black text-slate-800">{stats.users}</p>
+                                            <p className="text-slate-400 font-bold uppercase tracking-wider text-xs mb-1">Platform Users</p>
+                                            <p className="text-3xl font-black text-slate-800">{stats.users}</p>
                                         </div>
-                                        <div className="p-4 bg-orange-50 text-orange-500 rounded-2xl"><FaUsers size={28} /></div>
+                                        <div className="p-3 bg-orange-50 text-orange-500 rounded-xl"><FaUsers size={20} /></div>
                                     </div>
                                     <div className="mt-4 pt-4 border-t border-slate-100">
                                         <span className="text-slate-400 text-xs font-medium">
@@ -736,17 +786,87 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Super Admin only: quick admin overview */}
+                            {/* ── New Smart Summary Cards ───────────────── */}
+                            <div>
+                                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 opacity-70">Today's Insights</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <StatCard
+                                        label="Bookings Today"
+                                        value={stats.bookings.today}
+                                        icon={<FaCalendarDay size={20} />}
+                                        accent="border-l-indigo-500"
+                                        bg="bg-indigo-50"
+                                        iconColor="text-indigo-500"
+                                        sub={`${stats.bookings.total} total all-time`}
+                                        subColor="text-indigo-400"
+                                        onClick={() => setActiveTab('analytics')}
+                                    />
+                                    <StatCard
+                                        label="Active Vehicles"
+                                        value={stats.activeParkings}
+                                        icon={<FaBolt size={20} />}
+                                        accent="border-l-emerald-500"
+                                        bg="bg-emerald-50"
+                                        iconColor="text-emerald-500"
+                                        sub="Currently parked on campus"
+                                        subColor="text-emerald-600"
+                                        onClick={() => setActiveTab('analytics')}
+                                    />
+                                    <StatCard
+                                        label="Pending Approvals"
+                                        value={pendingCount}
+                                        icon={<FaUsers size={20} />}
+                                        accent={pendingCount > 0 ? 'border-l-red-500' : 'border-l-slate-300'}
+                                        bg={pendingCount > 0 ? 'bg-red-50' : 'bg-slate-50'}
+                                        iconColor={pendingCount > 0 ? 'text-red-500' : 'text-slate-400'}
+                                        sub={pendingCount > 0 ? 'Awaiting manual review' : 'All users approved'}
+                                        subColor={pendingCount > 0 ? 'text-red-500 font-bold' : 'text-slate-400'}
+                                        onClick={() => setActiveTab('users')}
+                                    />
+                                    <StatCard
+                                        label="Reserved Slots"
+                                        value={stats.slots.reserved}
+                                        icon={<FaMapMarkerAlt size={20} />}
+                                        accent="border-l-amber-500"
+                                        bg="bg-amber-50"
+                                        iconColor="text-amber-500"
+                                        sub={`${stats.slots.free} currently free`}
+                                        subColor="text-amber-600"
+                                    />
+                                    <StatCard
+                                        label="Peak Hour Today"
+                                        value={stats.peakHour || '—'}
+                                        icon={<FaFire size={20} />}
+                                        accent="border-l-rose-500"
+                                        bg="bg-rose-50"
+                                        iconColor="text-rose-500"
+                                        sub="Busiest arrival time"
+                                        subColor="text-rose-400"
+                                    />
+                                    <StatCard
+                                        label="Avg Duration"
+                                        value={stats.avgDuration ? `${stats.avgDuration}m` : '—'}
+                                        icon={<FaHourglass size={20} />}
+                                        accent="border-l-sky-500"
+                                        bg="bg-sky-50"
+                                        iconColor="text-sky-500"
+                                        sub="Average parking time today"
+                                        subColor="text-sky-400"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ── Super Admin Overview ──────────────────── */}
                             {isSuperAdmin && (
-                                <div className="glass-panel p-6 rounded-3xl border border-rose-200 border-l-4 border-l-rose-400 bg-rose-50/30">
+                                <div className="glass-panel p-6 rounded-3xl border border-blue-200 border-l-4 border-l-blue-400 bg-blue-50/30">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <FaUserShield className="text-rose-500" />
+                                        <FaUserShield className="text-blue-500" />
                                         <h3 className="font-black text-slate-800 text-lg">Admin Management Overview</h3>
-                                        <span className="ml-auto text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded font-black border border-rose-200">Super Admin Only</span>
+                                        <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-black border border-blue-200">Super Admin Only</span>
                                     </div>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                                         {[
-                                            { label: 'Super Admins', value: users.filter(u => u.role === 'super_admin').length, color: 'text-rose-600' },
+                                            { label: 'Super Admins', value: users.filter(u => u.role === 'super_admin').length, color: 'text-blue-600' },
                                             { label: 'Admins', value: users.filter(u => u.role === 'admin').length, color: 'text-purple-600' },
                                             { label: 'Students', value: users.filter(u => u.userType === 'student').length, color: 'text-blue-600' },
                                             { label: 'Guards', value: users.filter(u => u.userType === 'guard').length, color: 'text-orange-600' },
@@ -759,11 +879,82 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* ── Quick Charts Preview ──────────────────── */}
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Analytics Snapshot</h2>
+                                    <button
+                                        onClick={() => setActiveTab('analytics')}
+                                        className="text-xs font-bold text-blue-600 hover:underline">
+                                        View full analytics →
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <SlotStatusDonut slots={stats.slots} loading={analyticsLoading} />
+                                    <OccupancyChart data={analytics?.occupancyTrend} loading={analyticsLoading} />
+                                </div>
+                            </div>
                         </div>
                     )}
 
                     {/* ══════════════════════════════════════════════════════
-                        SLOTS TAB
+                        ANALYTICS TAB
+                       ══════════════════════════════════════════════════════ */}
+                    {activeTab === 'analytics' && (
+                        <div className="space-y-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <OccupancyChart data={analytics?.occupancyTrend} loading={analyticsLoading} />
+                                <SlotStatusDonut slots={stats?.slots} loading={loading} />
+                                <BookingTrendChart data={analytics?.bookingTrend} loading={analyticsLoading} />
+                                <EntryExitChart data={analytics?.entryExitTrend} loading={analyticsLoading} />
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="lg:col-span-1">
+                                    <UserDistributionChart data={analytics?.userDistribution} loading={analyticsLoading} />
+                                </div>
+                                <div className="lg:col-span-2">
+                                    <ActivityFeed activities={activities} />
+                                </div>
+                            </div>
+
+                            {/* ── Live System Section ───────────────────── */}
+                            <div>
+                                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-5">Live System</h2>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                    <div className="lg:col-span-2">
+                                        <LiveVehiclesTable data={liveVehicles} loading={analyticsLoading} />
+                                    </div>
+                                    <div>
+                                        <PendingRequestsPanel
+                                            bookings={activeBookings}
+                                            onRefresh={handleRefresh}
+                                            addToast={addToast}
+                                            addActivity={addActivity}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Super Admin Advanced Section ─────────── */}
+                            {isSuperAdmin && (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-5">
+                                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider">Advanced Analytics</h2>
+                                        <span className="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-black border border-blue-200">Super Admin Only</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <PeakHoursChart data={peakHours} loading={analyticsLoading} />
+                                        <TopSlotsPanel data={topSlots} loading={analyticsLoading} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════════════
+                        SLOTS TAB (unchanged)
                        ══════════════════════════════════════════════════════ */}
                     {activeTab === 'slots' && (
                         <div className="space-y-8">
@@ -862,18 +1053,18 @@ const AdminDashboard = () => {
                     )}
 
                     {/* ══════════════════════════════════════════════════════
-                        USERS TAB
+                        USERS TAB (unchanged)
                        ══════════════════════════════════════════════════════ */}
                     {activeTab === 'users' && (
                         <div className="space-y-4">
                             {isSuperAdmin ? (
-                                <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-semibold">
-                                    <FaUserShield className="text-rose-500 flex-shrink-0" />
+                                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm font-semibold">
+                                    <FaUserShield className="text-blue-500 flex-shrink-0" />
                                     You are logged in as <span className="font-black">Super Admin</span>. You can promote users to Admin and manage all accounts.
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-200 rounded-xl text-purple-700 text-sm font-semibold">
-                                    <FaLock className="text-purple-400 flex-shrink-0" />
+                                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm font-semibold">
+                                    <FaLock className="text-blue-400 flex-shrink-0" />
                                     Admin view — you can assign user types. Only Super Admin can promote/demote Admins.
                                 </div>
                             )}
@@ -884,7 +1075,7 @@ const AdminDashboard = () => {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                         <FaUsers size={14} />
                                     </div>
-                                    <input 
+                                    <input
                                         type="text"
                                         placeholder="Search by name, email, or vehicle..."
                                         className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-400 transition-all font-medium text-slate-700 text-sm shadow-sm"
@@ -892,19 +1083,17 @@ const AdminDashboard = () => {
                                         onChange={(e) => setUserSearchTerm(e.target.value)}
                                     />
                                     {userSearchTerm && (
-                                        <button 
+                                        <button
                                             onClick={() => setUserSearchTerm('')}
-                                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500 transition-colors"
-                                        >
+                                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-slate-500 transition-colors">
                                             <FaTimes size={14} />
                                         </button>
                                     )}
                                 </div>
-                                <select 
+                                <select
                                     className="px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-400 transition-all font-bold text-slate-600 text-sm shadow-sm"
                                     value={userTypeFilter}
-                                    onChange={(e) => setUserTypeFilter(e.target.value)}
-                                >
+                                    onChange={(e) => setUserTypeFilter(e.target.value)}>
                                     <option value="all">All Account Types</option>
                                     <option value="student">Students</option>
                                     <option value="teacher">Teachers</option>
@@ -972,7 +1161,6 @@ const AdminDashboard = () => {
                                                                 {u.userType ?? '—'}
                                                             </span>
                                                         </td>
-                                                        {/* Assign userType – only for role:'user' accounts */}
                                                         <td className="p-4">
                                                             {u.role === 'user' ? (
                                                                 isSuperAdmin ? (
@@ -1000,22 +1188,17 @@ const AdminDashboard = () => {
                                                                 <span className="text-xs text-slate-400 italic">N/A</span>
                                                             )}
                                                         </td>
-                                                        {/* Actions */}
                                                         <td className="p-4">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    {/* Approve Button */}
-                                                                    {!u.isApproved && u.role === 'user' && (
-                                                                        <button
-                                                                            onClick={() => handleApproveUser(u._id, u.name)}
-                                                                            disabled={approvingId === u._id}
-                                                                            title="Approve User"
-                                                                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm shadow-emerald-500/20 transition-all flex items-center gap-1.5 disabled:opacity-50">
-                                                                            {approvingId === u._id ? '…' : <><FaCheckCircle size={10} /> Approve</>}
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                                {/* Promote – super_admin only */}
+                                                                {!u.isApproved && u.role === 'user' && (
+                                                                    <button
+                                                                        onClick={() => handleApproveUser(u._id, u.name)}
+                                                                        disabled={approvingId === u._id}
+                                                                        title="Approve User"
+                                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm shadow-emerald-500/20 transition-all flex items-center gap-1.5 disabled:opacity-50">
+                                                                        {approvingId === u._id ? '…' : <><FaCheckCircle size={10} /> Approve</>}
+                                                                    </button>
+                                                                )}
                                                                 {isSuperAdmin && u.role === 'user' && (
                                                                     <button
                                                                         onClick={() => handlePromoteToAdmin(u._id, u.name)}
@@ -1025,7 +1208,6 @@ const AdminDashboard = () => {
                                                                         {promotingId === u._id ? '…' : <FaUserShield size={16} />}
                                                                     </button>
                                                                 )}
-                                                                {/* Demote – super_admin only */}
                                                                 {isSuperAdmin && u.role === 'admin' && (
                                                                     <button
                                                                         onClick={() => handleDemoteToUser(u._id, u.name)}
@@ -1035,7 +1217,6 @@ const AdminDashboard = () => {
                                                                         {demotingId === u._id ? '…' : <FaUserMinus size={16} />}
                                                                     </button>
                                                                 )}
-                                                                {/* Delete – not for super_admin accounts */}
                                                                 {u.role !== 'super_admin' && (
                                                                     <button
                                                                         onClick={() => handleDeleteUser(u._id, u.name)}
@@ -1057,12 +1238,12 @@ const AdminDashboard = () => {
                     )}
 
                     {/* ══════════════════════════════════════════════════════
-                        SYSTEM LOGS TAB — Super Admin Only
+                        SYSTEM LOGS TAB — Super Admin Only (unchanged)
                        ══════════════════════════════════════════════════════ */}
                     {activeTab === 'logs' && isSuperAdmin && (
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-semibold">
-                                <FaUserShield className="text-rose-500 flex-shrink-0" />
+                            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm font-semibold">
+                                <FaUserShield className="text-blue-500 flex-shrink-0" />
                                 <span><span className="font-black">System Logs</span> — Full audit trail of all vehicle entries and exits. Super Admin only.</span>
                             </div>
 

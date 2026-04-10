@@ -5,16 +5,54 @@ import { FaParking, FaArrowRight } from 'react-icons/fa';
 const HeroSection = ({ user }) => {
     return (
         <section className="relative min-h-screen flex items-center justify-center pt-20 pb-12 overflow-hidden">
-            {/* ── Fixed Top Logo ── */}
-            <div className="absolute top-6 left-6 lg:top-8 lg:left-10 z-50">
+            {/* ── Fixed Top Header ── */}
+            <div className="absolute top-0 left-0 w-full px-6 py-6 lg:px-10 lg:py-8 z-50 flex items-center justify-between">
+                {/* Logo */}
                 <Link to="/" className="inline-flex items-center gap-2.5 group">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-105 transition-all">
                         S
                     </div>
                     <span className="text-xl font-black tracking-tight text-slate-800">SoloPark</span>
                 </Link>
-            </div>
 
+                {/* Right CTA Button (Reference Style) */}
+                <Link 
+                    to={user ? ((user.role === 'admin' || user.role === 'super_admin') ? '/admin' : (user.userType === 'guard') ? '/guard' : '/student') : '/register'} 
+                    className="group relative inline-flex items-center justify-center h-[48px] rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:-translate-y-0.5"
+                    style={{ minWidth: "185px" }}
+                >
+                    {/* Layer 1: Default State with Spinning Border */}
+                    <div className="absolute inset-0 rounded-full overflow-hidden opacity-100 group-hover:opacity-0 transition-opacity duration-500">
+                        <div className="absolute w-[200%] h-[500%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,rgba(168,85,247,0.5)_20%,rgba(168,85,247,1)_50%,transparent_80%)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                        <div className="absolute inset-[2px] rounded-full bg-[#0A0A0A] ring-1 ring-inset ring-white/5"></div>
+                    </div>
+
+                    {/* Layer 2: Hover State Full-Bleed Luminous Gradient */}
+                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-in-out bg-gradient-to-r from-[#d8b4fe] via-[#a855f7] to-[#6366f1]"></div>
+
+                    {/* Layer 3: Content Shell */}
+                    <div className="relative flex items-center justify-center px-4 font-bold text-[11px] tracking-[0.15em] text-white z-10 w-full h-full pointer-events-none">
+                        {user ? (
+                            <span className="w-full text-center uppercase tracking-[0.15em]">GO TO DASHBOARD</span>
+                        ) : (
+                            <span className="grid items-center justify-items-center w-full h-full">
+                                {/* Default Text */}
+                                <span className="col-start-1 row-start-1 flex items-center transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-6 group-hover:opacity-0 uppercase">
+                                    PARK YOUR CAR
+                                </span>
+                            
+                                {/* Hover Text */}
+                                <span className="col-start-1 row-start-1 flex items-center gap-2 transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 uppercase">
+                                    <span>REGISTER</span>
+                                    <svg className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                </span>
+                            </span>
+                        )}
+                    </div>
+                </Link>
+            </div>
             {/* Animated Background Gradients */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl mx-auto z-0 pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400/30 rounded-full blur-[100px] mix-blend-multiply opacity-70 animate-blob"></div>
@@ -63,7 +101,7 @@ const HeroSection = ({ user }) => {
                             <>
                                 <Link
                                     to="/register"
-                                    className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-xl shadow-blue-500/30 transition-all hover:-translate-y-1 flex items-center justify-center"
+                                    className="w-full sm:w-auto px-8 py-3.5 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-2xl font-bold text-[15px] tracking-wide shadow-[0_12px_35px_-10px_rgba(37,99,235,0.7)] hover:shadow-[0_20px_40px_-12px_rgba(37,99,235,0.9)] transition-all duration-300 hover:-translate-y-1 flex items-center justify-center"
                                 >
                                     Get Started for Free
                                 </Link>
