@@ -9,7 +9,10 @@ const {
     getBookings,
     getActiveBookings,
     cancelBooking,
-    markExit
+    markExit,
+    manualEntry,
+    extendBooking,
+    studentExtendBooking
 } = require('../controllers/bookingController');
 const { protect, authorize, allowRolesOrUserTypes } = require('../middleware/authMiddleware');
 
@@ -27,5 +30,11 @@ router.route('/')
 router.put('/:id/cancel', protect, cancelBooking);
 router.put('/:id/verify', protect, allowRolesOrUserTypes(['admin', 'super_admin'], ['guard']), verifyBooking);
 router.put('/:id/exit', protect, allowRolesOrUserTypes(['admin', 'super_admin'], ['guard']), markExit);
+router.put('/:id/extend', protect, allowRolesOrUserTypes(['admin', 'super_admin'], ['guard']), extendBooking);
+router.put('/:id/student-extend', protect, studentExtendBooking);
+
+// ── Manual Entry (Guard) ──────────────────────────────────────────────────────
+router.post('/manual', protect, allowRolesOrUserTypes(['admin', 'super_admin'], ['guard']), manualEntry);
 
 module.exports = router;
+

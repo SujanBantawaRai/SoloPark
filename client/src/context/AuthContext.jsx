@@ -35,7 +35,17 @@ export const AuthProvider = ({ children }) => {
     // Registration: name, email, password, vehicleNumber, userType
     const register = async (name, email, password, vehicleNumber, userType) => {
         const { data } = await api.post('/auth/register', { name, email, password, vehicleNumber, userType });
-        // Do NOT set user state immediately. Account requires approval first.
+        // Do NOT set user state immediately. Account requires OTP verification first.
+        return data;
+    };
+
+    const verifyOtp = async (email, otp) => {
+        const { data } = await api.post('/auth/verify-otp', { email, otp });
+        return data;
+    };
+
+    const resendOtp = async (email) => {
+        const { data } = await api.post('/auth/resend-otp', { email });
         return data;
     };
 
@@ -55,7 +65,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading, updateUserState }}>
+        <AuthContext.Provider value={{ user, login, register, verifyOtp, resendOtp, logout, loading, updateUserState }}>
             {children}
         </AuthContext.Provider>
     );

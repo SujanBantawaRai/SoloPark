@@ -115,7 +115,7 @@ const getLogs = async (req, res) => {
             .populate('guard', 'name')
             .populate({
                 path: 'booking',
-                select: 'vehicleType user',
+                select: 'vehicleType user isManual manualOwnerName manualUserType',
                 populate: { path: 'user', select: 'name' }
             })
             .sort({ entryTime: -1 });

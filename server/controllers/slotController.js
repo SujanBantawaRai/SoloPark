@@ -76,17 +76,62 @@ const deleteSlot = async (req, res) => {
     }
 };
 
-// @desc    Get slots by zone name
-// @route   GET /api/slots/zone/:zoneName
+// @desc    Get slots by zone name, with optional time-range availability
+// @route   GET /api/slots/zone/:zoneName?startTime=...&endTime=...
 // @access  Public (or Private)
 const getSlotsByZone = async (req, res) => {
     try {
+        const Booking = require('../models/Booking');
         const slots = await ParkingSlot.find({ zoneName: req.params.zoneName }).sort({ slotNumber: 1 });
+
+        const { startTime, endTime } = req.query;
+
+        // If a time range is provided, compute per-slot availability for that window
+        if (startTime && endTime) {
+            const parsedStart = new Date(startTime);
+            const parsedEnd   = new Date(endTime);
+
+            // Fetch all conflicting bookings for this zone in the requested time range
+            const conflictingBookings = await Booking.find({
+                slot: { $in: slots.map(s => s._id) },
+                status: { $in: ['active', 'occupied'] },
+                startTime: { $lt: parsedEnd },
+                endTime:   { $gt: parsedStart }
+            }).select('slot startTime endTime status');
+
+            // Build a lookup: slotId -> array of conflicting bookings
+            const conflictMap = {};
+            conflictingBookings.forEach(b => {
+                const sid = b.slot.toString();
+                if (!conflictMap[sid]) conflictMap[sid] = [];
+                conflictMap[sid].push(b);
+            });
+
+            // Attach a computed `availabilityStatus` to each slot for the requested window
+            const annotated = slots.map(slot => {
+                const s = slot.toObject();
+                const conflicts = conflictMap[s._id.toString()] || [];
+                if (conflicts.length > 0) {
+                    const c = conflicts[0];
+                    s.availabilityStatus = 'unavailable';
+                    s.conflictStart = c.startTime;
+                    s.conflictEnd   = c.endTime;
+                } else {
+                    s.availabilityStatus = 'available';
+                }
+                return s;
+            });
+
+            return res.json(annotated);
+        }
+
+        // Default: return slots with real-time status (no time filter)
         res.json(slots);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // @desc    Get detailed info for an occupied/reserved slot
 // @route   GET /api/slots/:id/detail
@@ -104,13 +149,16 @@ const getSlotDetail = async (req, res) => {
         }
 
         res.json({
-            studentName: booking.user?.name,
+            studentName: booking.user?.name || booking.manualOwnerName,
             vehicleNumber: booking.vehicleNumber,
             vehicleType: booking.vehicleType,
             status: booking.status,
             startTime: booking.startTime,
             endTime: booking.endTime,
-            user: booking.user
+            user: booking.user,
+            isManual: booking.isManual,
+            manualOwnerName: booking.manualOwnerName,
+            manualUserType: booking.manualUserType
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

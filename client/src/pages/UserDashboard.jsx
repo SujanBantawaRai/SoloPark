@@ -110,16 +110,26 @@ const UserDashboard = () => {
                                                 <h4 className="font-bold text-lg">{booking.slot.slotNumber}</h4>
                                                 <p className="text-sm text-gray-600 font-mono">{booking.vehicleNumber}</p>
                                             </div>
-                                            <span className={`px-2 py-1 rounded text-xs capitalize ${booking.status === 'active' ? 'bg-green-100 text-green-800' :
+                                            <span className={`px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider ${
+                                                booking.status === 'active' ? 'bg-green-100 text-green-800' :
                                                 booking.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                booking.status === 'early_exit' ? 'bg-purple-100 text-purple-800' :
                                                     'bg-red-100 text-red-800'
                                                 }`}>
-                                                {booking.status}
+                                                {booking.status === 'early_exit' ? 'Early Exit' : booking.status}
                                             </span>
                                         </div>
-                                        <div className="mt-2 text-sm text-gray-500">
-                                            <p>From: {new Date(booking.startTime).toLocaleString()}</p>
-                                            <p>To: {new Date(booking.endTime).toLocaleString()}</p>
+                                        <div className="mt-3 text-sm text-gray-500 space-y-1">
+                                            {booking.isStudentExtended ? (
+                                                <>
+                                                    <p><strong className="text-gray-700">Original Booking:</strong> {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(booking.originalEndTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                    <p><strong className="text-indigo-600 border border-indigo-200 bg-indigo-50 px-1 rounded">Extended To:</strong> {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                </>
+                                            ) : (
+                                                <p><strong className="text-gray-700">Original Booking:</strong> {new Date(booking.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(booking.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                            )}
+                                            <p><strong className="text-gray-700">Actual Entry:</strong> {booking.actualEntryTime ? new Date(booking.actualEntryTime).toLocaleString() : 'Not entered'}</p>
+                                            <p><strong className="text-gray-700">Actual Exit:</strong> {booking.actualExitTime ? new Date(booking.actualExitTime).toLocaleString() : 'Not exited'}</p>
                                         </div>
                                         {booking.status === 'active' && (
                                             <button

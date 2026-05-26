@@ -29,10 +29,13 @@ const RegisterPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState(false);
+    const [step, setStep] = useState('form'); // 'form', 'otp', 'success'
+    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [resendTimer, setResendTimer] = useState(60);
     const [submitting, setSubmitting] = useState(false);
-    const { register, user } = useAuth();
+    const { register, verifyOtp, resendOtp, user } = useAuth();
     const navigate = useNavigate();
+    const otpRefs = useRef([]);
 
     // — Email check logic —
     const [emailStatus, setEmailStatus] = useState(null);
@@ -48,6 +51,16 @@ const RegisterPage = () => {
         clearTimeout(debounceTimer.current);
     }, []);
 
+    useEffect(() => {
+        let interval;
+        if (step === 'otp' && resendTimer > 0) {
+            interval = setInterval(() => {
+                setResendTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [step, resendTimer]);
+
     // ── Form submit ────────────────────────────────────────────────────────────
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,9 +68,61 @@ const RegisterPage = () => {
         setError(''); setSubmitting(true);
         try {
             await register(name, email.toLowerCase().trim(), password, vehicleNumber, userType);
-            setSuccess(true);
+            setStep('otp');
+            setResendTimer(60);
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleOtpChange = (index, value) => {
+        if (!/^[0-9]*$/.test(value)) return;
+        
+        const newOtp = [...otp];
+        newOtp[index] = value;
+        setOtp(newOtp);
+
+        // Auto focus next
+        if (value && index < 5) {
+            otpRefs.current[index + 1].focus();
+        }
+    };
+
+    const handleOtpKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !otp[index] && index > 0) {
+            otpRefs.current[index - 1].focus();
+        }
+    };
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        const otpValue = otp.join('');
+        if (otpValue.length !== 6) {
+            setError('Please enter a complete 6-digit OTP');
+            return;
+        }
+        setError(''); setSubmitting(true);
+        try {
+            await verifyOtp(email.toLowerCase().trim(), otpValue);
+            setStep('success');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Verification failed. Invalid or expired OTP.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        if (resendTimer > 0) return;
+        setError(''); setSubmitting(true);
+        try {
+            await resendOtp(email.toLowerCase().trim());
+            setResendTimer(60);
+            setError(''); // clear error if any
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to resend OTP.');
         } finally {
             setSubmitting(false);
         }
@@ -162,7 +227,7 @@ const RegisterPage = () => {
                 {/* ── Right side: Interaction Area ── */}
                 <div className="flex-1 flex flex-col items-center justify-start py-12 px-6 sm:px-12 md:px-20 lg:px-24 overflow-y-auto h-screen custom-scrollbar bg-white">
 
-                    {success ? (
+                    {step === 'success' ? (
                         /* SUCCESS STATE */
                         <div className="w-full max-w-md space-y-8 py-12 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
                             <div className="w-24 h-24 bg-emerald-50 rounded-[32px] flex items-center justify-center border-4 border-emerald-100 mb-4 shadow-xl shadow-emerald-500/10">
@@ -192,6 +257,63 @@ const RegisterPage = () => {
                                     Continue to Log In
                                     <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
                                 </Link>
+                            </div>
+                        </div>
+                    ) : step === 'otp' ? (
+                        /* OTP STATE */
+                        <div className="w-full max-w-md space-y-8 py-12 flex flex-col items-center text-center animate-in fade-in slide-in-from-right-8 duration-500">
+                            <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mb-2">
+                                <FaEnvelope className="text-blue-500 text-3xl" />
+                            </div>
+                            <div className="space-y-3">
+                                <h2 className="text-3xl font-black text-slate-900 leading-tight">
+                                    Check your email
+                                </h2>
+                                <p className="text-slate-500 text-sm leading-relaxed max-w-[300px]">
+                                    We've sent a 6-digit verification code to <span className="font-bold text-slate-800">{email}</span>.
+                                </p>
+                            </div>
+
+                            {/* Global error */}
+                            {error && (
+                                <div className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 p-4 rounded-2xl text-sm shadow-sm animate-in fade-in zoom-in duration-300 w-full text-left">
+                                    <FaTimesCircle className="mt-0.5 flex-shrink-0 text-red-500" />
+                                    <span className="font-semibold">{error}</span>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleVerifyOtp} className="w-full space-y-6">
+                                <div className="flex justify-center gap-3">
+                                    {otp.map((digit, idx) => (
+                                        <input
+                                            key={idx}
+                                            ref={el => otpRefs.current[idx] = el}
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={1}
+                                            value={digit}
+                                            onChange={(e) => handleOtpChange(idx, e.target.value)}
+                                            onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                                            className="w-12 h-14 text-center text-2xl font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                                        />
+                                    ))}
+                                </div>
+
+                                <button type="submit" disabled={otp.join('').length !== 6 || submitting}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-2xl transition-all duration-300 font-black shadow-xl shadow-blue-500/20 focus:ring-4 focus:ring-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3">
+                                    {submitting ? <><Spinner color="white" /> Verifying...</> : 'Verify Email'}
+                                </button>
+                            </form>
+
+                            <div className="pt-6 border-t border-slate-100 w-full">
+                                <p className="text-slate-500 text-sm font-medium mb-3">Didn't receive the code?</p>
+                                <button 
+                                    onClick={handleResendOtp}
+                                    disabled={resendTimer > 0 || submitting}
+                                    className="text-blue-600 font-bold hover:text-blue-700 disabled:text-slate-400 transition-colors"
+                                >
+                                    {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
+                                </button>
                             </div>
                         </div>
                     ) : (
