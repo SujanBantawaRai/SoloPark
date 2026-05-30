@@ -1,67 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaParking, FaTwitter, FaLinkedin, FaGithub, FaEnvelope } from 'react-icons/fa';
+import { FaTwitter, FaLinkedin, FaGithub, FaEnvelope } from 'react-icons/fa';
+import SoloParkLogo from './SoloParkLogo';
 
 const Footer = () => {
     return (
         <footer className="bg-slate-900 border-t border-slate-800 pt-8 pb-4">
             <div className="container mx-auto px-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-7">
-                    {/* Brand Column */}
-                    <div className="md:col-span-1">
-                        <Link to="/" className="flex items-center space-x-2.5 mb-3">
-                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg p-1.5 shadow-lg shadow-blue-500/20">
-                                <FaParking className="text-base text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-white tracking-tight">
-                                SoloPark
-                            </span>
-                        </Link>
-                        <p className="text-slate-400 leading-relaxed mb-3 font-light text-sm">
-                            Revolutionizing campus parking management with smart, scalable, and intuitive technology.
-                        </p>
-                        <div className="flex space-x-3">
-                            <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
-                                <FaTwitter />
-                            </a>
-                            <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
-                                <FaLinkedin />
-                            </a>
-                            <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
-                                <FaGithub />
-                            </a>
-                        </div>
-                    </div>
-
-                    {/* Links Column 1 */}
-                    <div>
-                        <h4 className="text-white font-bold mb-2 uppercase tracking-wider text-xs">Product</h4>
-                        <ul className="space-y-2">
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Features</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Security</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Multi-Institute</a></li>
-                        </ul>
-                    </div>
-
-                    {/* Links Column 2 */}
-                    <div>
-                        <h4 className="text-white font-bold mb-2 uppercase tracking-wider text-xs">Resources</h4>
-                        <ul className="space-y-2">
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Documentation</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Help Center</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">API Reference</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Contact Support</a></li>
-                        </ul>
-                    </div>
-
-                    {/* Links Column 3 */}
-                    <div>
-                        <h4 className="text-white font-bold mb-2 uppercase tracking-wider text-xs">Legal</h4>
-                        <ul className="space-y-2">
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Terms of Service</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Privacy Policy</a></li>
-                            <li><a href="#" className="text-slate-400 hover:text-blue-400 transition-colors text-sm">Cookie Policy</a></li>
-                        </ul>
+                <div className="flex flex-col items-center text-center max-w-xl mx-auto mb-7">
+                    <Link to="/" className="flex items-center mb-3">
+                        <SoloParkLogo showText={true} className="w-8 h-8" textClass="text-[17px]" lightText={true} />
+                    </Link>
+                    <p className="text-slate-400 leading-relaxed mb-4 font-light text-sm">
+                        Revolutionizing campus parking management with smart, scalable, and intuitive technology.
+                    </p>
+                    <div className="flex space-x-3">
+                        <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
+                            <FaTwitter />
+                        </a>
+                        <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
+                            <FaLinkedin />
+                        </a>
+                        <a href="#" className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
+                            <FaGithub />
+                        </a>
                     </div>
                 </div>
 

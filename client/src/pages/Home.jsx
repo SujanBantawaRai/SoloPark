@@ -1,38 +1,42 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import LandingNav from '../components/landing/LandingNav';
 import HeroSection from '../components/landing/HeroSection';
 import FeaturesSection from '../components/landing/FeaturesSection';
-import MultiInstituteSection from '../components/landing/MultiInstituteSection';
+import HowItWorksSection from '../components/landing/HowItWorksSection';
 import TestimonialsSection from '../components/landing/TestimonialsSection';
+import CTASection from '../components/landing/CTASection';
 import Footer from '../components/landing/Footer';
 
 const Home = () => {
     const { user } = useAuth();
 
-    // Scroll to top on load
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
 
     return (
-        <div className="min-h-screen flex flex-col font-sans bg-slate-50">
-            {/* The Navbar is already rendered in Layout.jsx above this. */}
-            
+        <div className="min-h-screen flex flex-col font-sans bg-white">
+            {/* 1. Sticky Landing Navbar */}
+            <LandingNav user={user} />
+
             <main className="flex-grow flex flex-col">
-                {/* 1. Hero Section */}
+                {/* 2. Hero Section */}
                 <HeroSection user={user} />
-                
-                {/* 2. Multi-Institute Showcase */}
-                <MultiInstituteSection />
-                
+
                 {/* 3. Core Features */}
                 <FeaturesSection />
-                
-                {/* 4. Testimonials (Social Proof) */}
-                <TestimonialsSection />
-                
 
+                {/* 4. How It Works */}
+                <HowItWorksSection />
+
+                {/* 5. Testimonials */}
+                <TestimonialsSection />
+
+                {/* 6. Call to Action */}
+                <CTASection />
             </main>
+
             <Footer />
         </div>
     );

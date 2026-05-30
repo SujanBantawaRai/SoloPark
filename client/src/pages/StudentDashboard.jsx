@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { FaExclamationTriangle } from 'react-icons/fa';
+import NotificationBell from '../components/NotificationBell';
 
 // ── Inline Icons ──────────────────────────────────────────────────────────────
 const Icons = {
@@ -79,15 +81,15 @@ const fmtTime = (date) =>
 const EXIT_BUFFER_MS = 10 * 60 * 1000;
 
 // ── My Active Reservation Banner ──────────────────────────────────────────────
-const ReservationBanner = ({ booking, onCancel, loading }) => {
+const ReservationBanner = ({ booking, onCancel, onExtend, loading }) => {
     const msToStart  = useCountdown(booking.startTime);
     const graceTarget = booking.graceDeadline || new Date(new Date(booking.startTime).getTime() + 10 * 60 * 1000).toISOString();
     const msGrace    = useCountdown(graceTarget);
     const msParking  = useCountdown(booking.endTime);
 
     const isOccupied   = booking.status === 'occupied';
-    const beforeStart  = msToStart > 0 && !isOccupied;          // waiting — booking hasn't started yet
-    const inGrace      = !beforeStart && msGrace > 0 && !isOccupied; // grace window is open
+    const beforeStart  = msToStart > 0 && !isOccupied;
+    const inGrace      = !beforeStart && msGrace > 0 && !isOccupied;
     const graceExpired = !beforeStart && msGrace <= 0 && !isOccupied;
     const inExitBuffer = isOccupied && msParking <= 0 && msParking > -EXIT_BUFFER_MS;
     const isOverstay   = isOccupied && msParking <= -EXIT_BUFFER_MS;
@@ -97,218 +99,243 @@ const ReservationBanner = ({ booking, onCancel, loading }) => {
     const end    = new Date(booking.endTime);
     const exitBy = new Date(end.getTime() + EXIT_BUFFER_MS);
 
-    let statusLabel, statusBadgeCls, headerGrad, topBarCls;
+    let statusLabel, headerGrad;
     if (isOverstay) {
-        statusLabel = 'Overstay — Please Exit';
-        statusBadgeCls = 'bg-red-100 text-red-700 border-red-300';
-        headerGrad = 'from-red-600 to-rose-700'; topBarCls = 'bg-red-600';
+        statusLabel = 'Overstay — Exit Now';   headerGrad = 'from-red-600 to-rose-700';
     } else if (inExitBuffer) {
-        statusLabel = 'Exit Buffer Active';
-        statusBadgeCls = 'bg-orange-100 text-orange-700 border-orange-300';
-        headerGrad = 'from-orange-500 to-red-500'; topBarCls = 'bg-orange-500';
+        statusLabel = 'Exit Buffer Active';    headerGrad = 'from-orange-500 to-red-500';
     } else if (isOccupied) {
-        statusLabel = 'Active · Parked';
-        statusBadgeCls = 'bg-emerald-100 text-emerald-700 border-emerald-300';
-        headerGrad = 'from-emerald-500 to-teal-600'; topBarCls = 'bg-emerald-500';
+        statusLabel = 'Active · Parked';       headerGrad = 'from-emerald-500 to-teal-600';
     } else if (graceExpired) {
-        statusLabel = 'Grace Period Expired';
-        statusBadgeCls = 'bg-red-100 text-red-700 border-red-300';
-        headerGrad = 'from-red-500 to-rose-600'; topBarCls = 'bg-red-500';
+        statusLabel = 'Grace Expired';         headerGrad = 'from-red-500 to-rose-600';
     } else if (isExtended) {
-        statusLabel = 'Grace Extended by Guard';
-        statusBadgeCls = 'bg-purple-100 text-purple-700 border-purple-300';
-        headerGrad = 'from-purple-600 to-indigo-700'; topBarCls = 'bg-purple-500';
+        statusLabel = 'Grace Extended +5 min'; headerGrad = 'from-purple-600 to-indigo-700';
     } else if (inGrace && msGrace < 3 * 60 * 1000) {
-        statusLabel = 'Grace Ending Soon!';
-        statusBadgeCls = 'bg-orange-100 text-orange-700 border-orange-300';
-        headerGrad = 'from-orange-500 to-red-500'; topBarCls = 'bg-orange-500';
+        statusLabel = 'Grace Ending Soon!';    headerGrad = 'from-orange-500 to-red-500';
     } else if (inGrace) {
-        statusLabel = 'Arrive Now — Grace Period';
-        statusBadgeCls = 'bg-amber-100 text-amber-700 border-amber-300';
-        headerGrad = 'from-amber-500 to-orange-500'; topBarCls = 'bg-amber-500';
+        statusLabel = 'Grace Period Active';   headerGrad = 'from-amber-500 to-orange-500';
     } else {
-        // beforeStart
-        statusLabel = 'Booking Confirmed';
-        statusBadgeCls = 'bg-blue-100 text-blue-700 border-blue-300';
-        headerGrad = 'from-blue-500 to-indigo-600'; topBarCls = 'bg-blue-500';
+        statusLabel = 'Pending Guard Approval'; headerGrad = 'from-amber-500 to-orange-600';
     }
 
-    const slotNum  = booking.slot?.slotNumber;
-    const zoneName = booking.slot?.zoneName;
+    const slotNum   = booking.slot?.slotNumber;
+    const zoneName  = booking.slot?.zoneName;
+    const slotShort = slotNum?.split('-')[1] || slotNum || '—';
+
+    // Duration label e.g. "2h" or "2h 30m"
+    const durationMs = end - start;
+    const dH = Math.floor(durationMs / 3600000);
+    const dM = Math.floor((durationMs % 3600000) / 60000);
+    const durationLabel = dH > 0 ? (dM > 0 ? `${dH}h ${dM}m` : `${dH}h`) : `${dM}m`;
+
+    // Booking ref
+    const bookingRef = booking.bookingRef
+        || (slotNum && booking._id ? `${slotNum}-${booking._id.slice(-4).toUpperCase()}` : null)
+        || '—';
 
     return (
-        <div className="mb-8 group">
-            <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200/80
-                hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-white">
+        <div className="mb-6">
+            <div className={`rounded-2xl overflow-hidden border ${beforeStart ? 'border-amber-200/60' : 'border-slate-200'} bg-white`}
+                 style={beforeStart ? {
+                     boxShadow: '0 12px 30px rgba(245, 158, 11, 0.18), 0 4px 10px rgba(245, 158, 11, 0.08)'
+                 } : {
+                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                 }}>
 
-                <div className={`h-1.5 w-full ${topBarCls} transition-colors duration-500`} />
+                {/* ── Coloured header row ── */}
+                <div 
+                    className={`px-4 ${beforeStart ? 'py-2' : 'py-3.5'} flex items-center justify-between gap-3 relative overflow-hidden ${!beforeStart ? `bg-gradient-to-r ${headerGrad}` : ''}`}
+                    style={beforeStart ? {
+                        background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 60%, #EA580C 100%)'
+                    } : undefined}
+                >
+                    {/* Subtle radial highlight overlay for a premium SaaS appearance */}
+                    {beforeStart && (
+                        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.22),transparent_60%)]" />
+                    )}
 
-                <div className={`bg-gradient-to-br ${headerGrad} px-6 py-5`}>
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-white/20 rounded-2xl flex flex-col items-center justify-center flex-shrink-0 shadow-inner">
-                                <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Slot</span>
-                                <span className="text-xl font-black text-white leading-tight">
-                                    {slotNum?.split('-')[1] || slotNum || '—'}
+                    {/* Left: slot badge + zone + status + vehicle */}
+                    <div className="flex items-center gap-3 min-w-0 relative z-10">
+                        <div className={`flex-shrink-0 ${
+                            beforeStart 
+                                ? 'bg-white/10 border border-white/20 backdrop-blur-md shadow-sm' 
+                                : 'bg-white/20 border border-white/30'
+                        } rounded-xl px-2.5 py-1.5 text-center leading-none`}>
+                            <p className={`text-[8px] font-bold ${beforeStart ? 'text-white/80' : 'text-white/70'} uppercase tracking-widest mb-0.5`}>SLOT</p>
+                            <p className="text-lg font-black text-white">{slotShort}</p>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                <span className="text-base font-extrabold text-white leading-tight truncate">
+                                    {zoneName} Block
                                 </span>
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-extrabold uppercase tracking-wide ${statusBadgeCls}`}>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                                {beforeStart ? (
+                                    <span className="flex-shrink-0 inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[9.5px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+                                        <span className="relative flex h-1.5 w-1.5">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-200 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-300"></span>
+                                        </span>
+                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-white/90 animate-[spin_6s_linear_infinite]">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.15.8-1.3-4.5-2.7V7z"/>
+                                        </svg>
                                         {statusLabel}
                                     </span>
-                                    {isExtended && (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300 text-[11px] font-extrabold">
-                                            ⏳ +5 min grace by Guard
-                                        </span>
-                                    )}
-                                </div>
-                                <h3 className="text-xl font-extrabold text-white tracking-tight">
-                                    {zoneName} Block — Slot {slotNum?.split('-')[1] || slotNum}
-                                </h3>
-                                <p className="text-white/70 text-sm font-medium mt-0.5">{booking.vehicleNumber} · {booking.vehicleType || 'Car'}</p>
+                                ) : (
+                                    <span className="flex-shrink-0 inline-flex items-center gap-1 bg-white/20 border border-white/25 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+                                        {statusLabel}
+                                    </span>
+                                )}
                             </div>
+                            <p className={`${beforeStart ? 'text-white/90' : 'text-white/70'} text-xs font-semibold truncate`}>
+                                {booking.vehicleNumber} · {booking.vehicleType || 'Car'}
+                                {!beforeStart && (
+                                    <>
+                                        <span className="mx-1.5 opacity-40">·</span>
+                                        Ref {bookingRef}
+                                    </>
+                                )}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Right: time block + action button */}
+                    <div className="flex items-center gap-2.5 flex-shrink-0 relative z-10">
+                        <div className="text-right">
+                            {isOccupied && !inExitBuffer && !isOverstay ? (
+                                <>
+                                    <p className="text-xl font-black text-white tabular-nums leading-tight">{fmtMs(Math.abs(msParking))}</p>
+                                    <p className="text-[11px] font-semibold text-white/70">until {fmtTime(end)}</p>
+                                </>
+                            ) : inGrace ? (
+                                <>
+                                    <p className={`text-xl font-black tabular-nums leading-tight ${msGrace < 60000 ? 'text-red-200 animate-pulse' : 'text-white'}`}>
+                                        {graceExpired ? '00:00' : fmtMs(msGrace)}
+                                    </p>
+                                    <p className="text-[11px] font-semibold text-white/70">grace left</p>
+                                </>
+                            ) : beforeStart ? (
+                                <>
+                                    <p className="text-lg font-black text-white tabular-nums tracking-tight leading-none mb-1">{fmtTime(start)}</p>
+                                    <p className="text-[9px] font-bold text-white/85 uppercase tracking-wider">UNTIL {fmtTime(end)}</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-xl font-black text-white tabular-nums leading-tight">{fmtTime(start)}</p>
+                                    <p className="text-[11px] font-semibold text-white/70">to {fmtTime(end)}</p>
+                                </>
+                            )}
                         </div>
 
-                        {beforeStart ? (
-                            <div className="flex-shrink-0 bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 text-center min-w-[140px] border border-white/20 shadow-inner">
-                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-1">Starts at</p>
-                                <p className="text-2xl font-black text-white">{fmtTime(start)}</p>
-                                <p className="text-[10px] font-semibold text-white/60 mt-1">Until {fmtTime(end)}</p>
-                            </div>
-                        ) : isOccupied ? (
-                            <div className="flex-shrink-0 bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 text-center min-w-[120px] border border-white/20 shadow-inner">
-                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-0.5">
-                                    {isOverstay ? 'Overstay' : inExitBuffer ? 'Exit buffer' : 'Parking ends'}
-                                </p>
-                                <p className={`text-3xl font-black tabular-nums tracking-tight ${isOverstay ? 'text-red-300 animate-pulse' : (msParking < 60000 ? 'text-red-200 animate-pulse' : 'text-white')}`}>
-                                    {fmtMs(Math.abs(msParking))}
-                                </p>
-                                <p className="text-[10px] font-semibold text-white/70 mt-1">
-                                    {isOverstay ? 'Please exit now' : inExitBuffer ? `Exit by ${fmtTime(exitBy)}` : `Until ${fmtTime(end)}`}
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="flex-shrink-0 bg-white/15 backdrop-blur-sm rounded-2xl px-5 py-3 text-center min-w-[120px] border border-white/20 shadow-inner">
-                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-0.5">
-                                    {graceExpired ? 'Expired' : 'Grace ends'}
-                                </p>
-                                <p className={`text-3xl font-black tabular-nums tracking-tight ${graceExpired ? 'text-red-300 animate-pulse' : (msGrace < 60000 ? 'text-red-200 animate-pulse' : 'text-white')}`}>
-                                    {graceExpired ? '00:00' : fmtMs(msGrace)}
-                                </p>
-                                <p className="text-[10px] font-semibold text-white/70 mt-1">
-                                    {graceExpired ? 'Slot released' : 'Arrive & get verified'}
-                                </p>
-                            </div>
+                        {!isOccupied ? (
+                            <button onClick={onCancel} disabled={loading}
+                                className={`flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    beforeStart 
+                                        ? 'bg-white/10 hover:bg-white/20 active:bg-white/5 backdrop-blur-md border border-white/20 shadow-sm text-white font-bold px-2.5 py-1.5 rounded-xl text-xs' 
+                                        : 'bg-white/20 hover:bg-white/30 active:bg-white/10 border border-white/30 text-white font-extrabold px-3 py-2 rounded-xl text-sm'
+                                }`}
+                            >
+                                {loading
+                                    ? <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                    : <Icons.Close />
+                                }
+                                Cancel
+                            </button>
+                        ) : !isOverstay && (
+                            <button onClick={() => onExtend?.(booking)} disabled={loading}
+                                className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/10
+                                    border border-white/30 text-white font-extrabold px-3 py-2 rounded-xl
+                                    text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <Icons.Clock />
+                                Extend
+                            </button>
                         )}
-
-
-                        <div className="flex flex-col gap-2">
-                            {isOccupied && !isOverstay && onExtend && (
-                                <button onClick={() => onExtend(booking)} disabled={loading}
-                                    className="flex-shrink-0 bg-white/20 hover:bg-white/30 active:bg-white/10
-                                        text-white font-bold px-4 py-2.5 rounded-xl transition-all
-                                        flex items-center justify-center gap-2 text-sm border border-white/30
-                                        disabled:opacity-50 disabled:cursor-not-allowed shadow-sm w-full">
-                                    <Icons.Clock />
-                                    Extend Booking
-                                </button>
-                            )}
-                            {!isOccupied && (
-                                <button onClick={onCancel} disabled={loading}
-                                    className="flex-shrink-0 bg-white/20 hover:bg-white/30 active:bg-white/10
-                                        text-white font-bold px-4 py-2.5 rounded-xl transition-all
-                                        flex items-center justify-center gap-2 text-sm border border-white/30
-                                        disabled:opacity-50 disabled:cursor-not-allowed shadow-sm w-full">
-                                    {loading
-                                        ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                        : <Icons.Close />
-                                    }
-                                    Cancel
-                                </button>
-                            )}
-                        </div>
                     </div>
                 </div>
 
-                <div className="px-6 py-5">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Slot</p>
-                            <p className="text-lg font-extrabold text-slate-800">{slotNum || '—'}</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Block / Zone</p>
-                            <p className="text-lg font-extrabold text-slate-800">{zoneName || '—'}</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Vehicle No.</p>
-                            <p className="text-base font-extrabold text-slate-800 tracking-wider">{booking.vehicleNumber}</p>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                                {isOccupied ? 'Entry Time' : 'Booking Start'}
-                            </p>
-                            <p className="text-base font-extrabold text-slate-800">
-                                {isOccupied && booking.actualEntryTime
-                                    ? fmtTime(booking.actualEntryTime)
-                                    : fmtTime(start)
-                                }
-                            </p>
-                        </div>
-                    </div>
+                {/* ── Info rows ── */}
+                <div className="divide-y divide-slate-100">
 
-                    <div className="mt-4">
-                        {isOverstay ? (
-                            <div className="flex items-center gap-3 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                <Icons.Alert />
-                                <span>Your parking time has ended. Please exit immediately. The guard will mark your exit.</span>
-                            </div>
-                        ) : inExitBuffer ? (
-                            <div className="flex items-start gap-3 bg-orange-50 border border-orange-300 text-orange-800 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                <Icons.Alert />
-                                <span><strong>Parking ended at {fmtTime(end)}.</strong> You have until <strong>{fmtTime(exitBy)}</strong> to exit (10-min exit buffer).</span>
-                            </div>
-                        ) : isOccupied ? (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 flex-shrink-0"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
-                                    <span>Verified by guard. <strong>Parking valid until {fmtTime(end)}.</strong></span>
-                                </div>
-                                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 text-slate-500 px-4 py-3 rounded-2xl text-xs font-semibold">
-                                    <Icons.Clock />
-                                    <span>10-min exit buffer after {fmtTime(end)} — exit by <strong>{fmtTime(exitBy)}</strong>.</span>
-                                </div>
-                            </div>
-                        ) : graceExpired ? (
-                            <div className="flex items-start gap-3 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                <Icons.Alert />
-                                <span>Grace period has expired. Your slot has been auto-released. Please cancel this booking and make a new one if needed.</span>
-                            </div>
-                        ) : isExtended ? (
-                            <div className="flex items-start gap-3 bg-purple-50 border border-purple-200 text-purple-800 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                <Icons.Clock />
-                                <span><strong>Grace extended +5 min by Guard.</strong> Proceed to your slot immediately and get verified.</span>
-                            </div>
-                        ) : beforeStart ? (
-                            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-2xl text-sm font-semibold">
-                                <Icons.Clock />
-                                <span>Your slot is reserved. <strong>Arrive at {fmtTime(start)}</strong> — you will have a <strong>10-minute grace period</strong> to get verified by the guard.</span>
-                            </div>
-                        ) : (
-                            <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl text-sm border font-semibold ${
-                                msGrace < 3 * 60000 ? 'bg-orange-50 border-orange-300 text-orange-800' : 'bg-amber-50 border-amber-200 text-amber-800'
-                            }`}>
-                                <Icons.Alert />
-                                <span>{msGrace < 3 * 60000
-                                    ? `⚠️ Less than 3 minutes left! Find the guard immediately to get verified.`
+
+                    {isOccupied && !inExitBuffer && !isOverstay && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-emerald-50/60">
+                            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-emerald-600 flex-shrink-0"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            <span className="text-sm font-semibold text-emerald-800">
+                                Verified by guard. <strong>Parking valid until {fmtTime(end)}.</strong>
+                                <span className="text-slate-300 mx-2">|</span>
+                                <span className="text-slate-500">{fmtTime(start)} → {fmtTime(end)} ({durationLabel})</span>
+                            </span>
+                        </div>
+                    )}
+                    {inExitBuffer && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-orange-50/60">
+                            <Icons.Alert />
+                            <span className="text-sm font-semibold text-orange-800">
+                                <strong>Parking ended at {fmtTime(end)}.</strong> You have until <strong>{fmtTime(exitBy)}</strong> to exit (10-min exit buffer).
+                            </span>
+                        </div>
+                    )}
+                    {isOverstay && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-red-50/60">
+                            <Icons.Alert />
+                            <span className="text-sm font-semibold text-red-700">
+                                Your parking time has ended. Please exit immediately. The guard will mark your exit.
+                            </span>
+                        </div>
+                    )}
+                    {graceExpired && !isOccupied && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-red-50/60">
+                            <Icons.Alert />
+                            <span className="text-sm font-semibold text-red-700">
+                                Grace period has expired. Your slot has been auto-released. Please cancel this booking and make a new one if needed.
+                            </span>
+                        </div>
+                    )}
+                    {inGrace && !graceExpired && (
+                        <div className={`px-4 py-2.5 flex items-center gap-2 ${msGrace < 3 * 60000 ? 'bg-orange-50/60' : 'bg-amber-50/60'}`}>
+                            <Icons.Alert />
+                            <span className={`text-sm font-semibold ${msGrace < 3 * 60000 ? 'text-orange-800' : 'text-amber-800'}`}>
+                                {msGrace < 3 * 60000
+                                    ? '⚠️ Less than 3 minutes left! Find the guard immediately to get verified.'
                                     : `Your booking started at ${fmtTime(start)}. Please arrive at your slot and get verified by the guard before the grace period ends.`
-                                }</span>
+                                }
+                            </span>
+                        </div>
+                    )}
+                    {isExtended && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-purple-50/60">
+                            <Icons.Clock />
+                            <span className="text-sm font-semibold text-purple-800">
+                                <strong>Grace extended +5 min by Guard.</strong> Proceed to your slot immediately and get verified.
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Hint row */}
+                    {beforeStart && (
+                        <div className="mx-4 my-1.5 px-3 py-1.5 flex items-start gap-2.5 bg-amber-50/30 border border-amber-100/40 rounded-xl">
+                            <div className="mt-0.5 bg-amber-100/80 rounded-lg p-1 text-amber-700 flex-shrink-0 shadow-sm border border-amber-200/30">
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                                </svg>
                             </div>
-                        )}
-                    </div>
+                            <div>
+                                <p className="text-[11px] font-bold text-amber-950 mb-0.5">Awaiting Verification Window</p>
+                                <p className="text-[10.5px] text-amber-800/95 font-medium leading-relaxed">
+                                    Once approved by the guard, please <strong>arrive at your slot by {fmtTime(start)}</strong>. A <strong>10-minute grace window</strong> will be active to verify your vehicle.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {isOccupied && !inExitBuffer && !isOverstay && (
+                        <div className="px-4 py-2.5 flex items-center gap-2 bg-slate-50/80">
+                            <Icons.Clock />
+                            <span className="text-xs text-slate-500 font-semibold">
+                                10-min exit buffer after <strong className="text-slate-700">{fmtTime(end)}</strong> — exit by <strong className="text-slate-700">{fmtTime(exitBy)}</strong>.
+                            </span>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </div>
@@ -332,82 +359,175 @@ const AvailBar = ({ available, total, barClass }) => {
     );
 };
 
+
+// ── Duration presets ──────────────────────────────────────────────────────────
+const DURATION_PRESETS = [
+    { label: '2 hrs',   minutes: 120, tag: 'Most Common', tagCls: 'bg-emerald-100 text-emerald-700' },
+    { label: '2.5 hrs', minutes: 150, tag: 'Common',      tagCls: 'bg-blue-100 text-blue-700' },
+    { label: 'Custom',  minutes: null, tag: 'For Events', tagCls: 'bg-violet-100 text-violet-700' },
+];
+
+// Round a Date to the nearest 30-min mark (ceiling)
+const roundUpTo30 = (d) => {
+    const m = d.getMinutes();
+    if (m === 0 || m === 30) return d;
+    const rounded = new Date(d);
+    rounded.setMinutes(m < 30 ? 30 : 60, 0, 0);
+    return rounded;
+};
+
+// Format datetime-local value from a Date
+const toLocalInput = (d) => {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 // ── Reservation Modal ─────────────────────────────────────────────────────────
 const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehicleNumber, defaultStartTime, defaultEndTime }) => {
     const [minStart] = useState(() => {
         const d = new Date();
         d.setMinutes(d.getMinutes() + 5);
-        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-        return d.toISOString().slice(0, 16);
+        return toLocalInput(roundUpTo30(d));
     });
 
     useEffect(() => {
-        // Prevent background scrolling while modal is open
         document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
+        return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
     const [vehicleNumber, setVehicleNumber] = useState(defaultVehicleNumber || '');
-    const [vehicleType, setVehicleType] = useState('Car');
-    const [arrivalTime, setArrivalTime] = useState(() => defaultStartTime || minStart);
-    const [endTime, setEndTime] = useState(() => {
-        if (defaultEndTime) return defaultEndTime;
-        const d = new Date(defaultStartTime || minStart);
-        d.setHours(d.getHours() + 1);
-        return d.toISOString().slice(0, 16);
+    const [vehicleType, setVehicleType]     = useState('Car');
+
+    // Start time — rounded up to nearest :00 or :30
+    const [startTime, setStartTime] = useState(() => {
+        if (defaultStartTime) return defaultStartTime;
+        return minStart;
     });
+
+    // Duration selection: one of the preset minute values, or null for Custom
+    const [durationMins, setDurationMins] = useState(120); // default 2 hrs
+
+    // Computed end time for presets
+    const computedEnd = (() => {
+        if (durationMins === null) return null;
+        const s = new Date(startTime);
+        if (isNaN(s)) return null;
+        return new Date(s.getTime() + durationMins * 60000);
+    })();
+
+    // Custom end time state (only used when durationMins === null)
+    const [customEndTime, setCustomEndTime] = useState(() => {
+        if (defaultEndTime) return defaultEndTime;
+        const s = new Date(startTime);
+        s.setHours(s.getHours() + 2);
+        return toLocalInput(roundUpTo30(s));
+    });
+
     const [errorMsg, setErrorMsg] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    // Snap a raw datetime-local string to the nearest :00 or :30
+    const snapStart = (val) => {
+        const d = new Date(val);
+        if (isNaN(d)) return val;
+        return toLocalInput(roundUpTo30(d));
+    };
+
+    // When start time changes, snap minutes and keep custom end time coherent
+    const handleStartChange = (val) => {
+        const snapped = snapStart(val);
+        setStartTime(snapped);
         setErrorMsg('');
-        if (!vehicleNumber.trim() || !arrivalTime || !endTime) {
-            setErrorMsg('Please fill in all required fields.');
+        // Push custom end time forward if it's now before snapped start
+        if (durationMins === null) {
+            const s = new Date(snapped);
+            const e = new Date(customEndTime);
+            if (e <= s) {
+                const newE = new Date(s.getTime() + 2 * 60 * 60000);
+                setCustomEndTime(toLocalInput(roundUpTo30(newE)));
+            }
+        }
+    };
+
+    // Safety-net: also snap on blur in case onChange fires before user confirms
+    const handleStartBlur = (val) => {
+        const snapped = snapStart(val);
+        if (snapped !== val) setStartTime(snapped);
+    };
+
+    // When custom end time changes: snap minutes to 00 or 30
+    const handleCustomEndChange = (val) => {
+        const d = new Date(val);
+        if (!isNaN(d)) {
+            const snapped = roundUpTo30(d);
+            setCustomEndTime(toLocalInput(snapped));
+        } else {
+            setCustomEndTime(val);
+        }
+        setErrorMsg('');
+    };
+
+    const handleSubmit = () => {
+        setErrorMsg('');
+        if (!vehicleNumber.trim()) {
+            setErrorMsg('Please enter your vehicle number.');
             return;
         }
-        const parsedEnd = new Date(endTime);
-        const parsedStart = new Date(arrivalTime);
-        if (parsedEnd <= parsedStart) {
-            setErrorMsg('Booking End time must be after the Start time.');
-            return; // end must be after start
+        if (!startTime) {
+            setErrorMsg('Please select a start time.');
+            return;
         }
+        const parsedStart = new Date(startTime);
+        let parsedEnd;
+        if (durationMins !== null) {
+            parsedEnd = computedEnd;
+        } else {
+            parsedEnd = new Date(customEndTime);
+        }
+        if (!parsedEnd || isNaN(parsedEnd)) {
+            setErrorMsg('Please select a valid end time.');
+            return;
+        }
+        if (parsedEnd <= parsedStart) {
+            setErrorMsg('End time must be after start time.');
+            return;
+        }
+        // Always send the snapped ISO string as startTime
         onConfirm({
             vehicleNumber: vehicleNumber.toUpperCase(),
             vehicleType,
-            startTime: arrivalTime,
-            endTime: parsedEnd.toISOString()
+            startTime: new Date(startTime).toISOString(),
+            endTime: parsedEnd.toISOString(),
         });
     };
 
     const slotNum = slot?.slotNumber?.split('-')[1] || slot?.slotNumber;
+    const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300 focus:bg-white transition-all duration-200';
 
-    // Input field base style
-    const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-300 focus:bg-white transition-all duration-200 placeholder:text-slate-300 placeholder:font-medium';
+    // Format display time
+    const fmtDisplay = (d) => d instanceof Date && !isNaN(d)
+        ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        : '—';
+
+    const parsedStart = new Date(startTime);
+    const endDisplay  = durationMins !== null ? computedEnd : (customEndTime ? new Date(customEndTime) : null);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
             onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col animate-modal-in overflow-hidden border border-slate-100">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col animate-modal-in overflow-hidden border border-slate-100">
 
                 {/* ── Gradient Header ── */}
                 <div className={`bg-gradient-to-br ${zone?.color?.bg} px-6 pt-6 pb-8 relative overflow-hidden flex-shrink-0`}>
-                    {/* Decorative circles */}
                     <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
                     <div className="absolute -right-2 -bottom-4 w-20 h-20 rounded-full bg-white/5 pointer-events-none" />
-
                     <div className="relative z-10 flex items-start justify-between">
                         <div>
                             <span className="inline-flex items-center gap-1.5 bg-white/20 text-white text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3">
                                 📍 Reserve Slot
                             </span>
-                            <h3 className="text-2xl font-extrabold text-white tracking-tight leading-tight">
-                                {zone?.name}
-                            </h3>
+                            <h3 className="text-2xl font-extrabold text-white tracking-tight leading-tight">{zone?.name}</h3>
                             <p className="text-white/70 text-sm font-semibold mt-0.5">{zone?.type}</p>
                         </div>
-                        {/* Slot number badge */}
                         <div className="flex flex-col items-center mr-1">
                             <div className="w-14 h-14 bg-white/20 rounded-2xl flex flex-col items-center justify-center border border-white/30 shadow-inner">
                                 <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Slot</span>
@@ -415,15 +535,13 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                             </div>
                         </div>
                     </div>
-
-                    {/* Close button */}
                     <button onClick={onClose}
                         className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors z-50">
                         <Icons.Close />
                     </button>
                 </div>
 
-                {/* ── Form body (pulls up over header) ── */}
+                {/* ── Form body ── */}
                 <div className="-mt-4 bg-white rounded-t-3xl px-6 pt-6 pb-6 space-y-5 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] overflow-y-auto flex-1 relative z-10 custom-scrollbar">
 
                     {/* Vehicle Number */}
@@ -443,7 +561,6 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                         />
                     </div>
 
-                    {/* Divider */}
                     <div className="border-t border-slate-100" />
 
                     {/* Vehicle Type */}
@@ -454,20 +571,16 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                         </label>
                         <div className="grid grid-cols-3 gap-2.5">
                             {[
-                                { value: 'Car',    icon: <Icons.Car />,  label: 'Car' },
-                                { value: 'Bike',   icon: <Icons.Bike />, label: 'Bike' },
-                                { value: 'Scooter',icon: <Icons.Bike />, label: 'Scooter' },
+                                { value: 'Car',     icon: <Icons.Car />,  label: 'Car' },
+                                { value: 'Bike',    icon: <Icons.Bike />, label: 'Bike' },
+                                { value: 'Scooter', icon: <Icons.Bike />, label: 'Scooter' },
                             ].map(opt => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => setVehicleType(opt.value)}
-                                    className={`relative flex flex-col items-center gap-2 py-3.5 rounded-2xl border-2 font-bold text-sm transition-all duration-200
+                                <button key={opt.value} type="button" onClick={() => setVehicleType(opt.value)}
+                                    className={`flex flex-col items-center gap-2 py-3.5 rounded-2xl border-2 font-bold text-sm transition-all duration-200
                                         ${vehicleType === opt.value
                                             ? 'border-blue-500 bg-gradient-to-b from-blue-50 to-indigo-50 text-blue-600 shadow-md shadow-blue-100'
                                             : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-slate-300 hover:text-slate-600 hover:bg-white'
-                                        }`}
-                                >
+                                        }`}>
                                     <span className="text-xl">{opt.icon}</span>
                                     <span className="text-xs font-extrabold">{opt.label}</span>
                                 </button>
@@ -475,48 +588,143 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                         </div>
                     </div>
 
-                    {/* Divider */}
                     <div className="border-t border-slate-100" />
 
-                    {/* Arrival Time (booking start) */}
+                    {/* ── Start Time ── */}
                     <div>
                         <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
-                            Booking Start <span className="text-red-400 normal-case">*</span>
+                            Arrival / Start Time <span className="text-red-400 normal-case">*</span>
                         </label>
                         <input
                             type="datetime-local"
                             required
                             min={minStart}
-                            value={arrivalTime}
-                            onChange={e => {
-                                setArrivalTime(e.target.value);
-                                // Auto-suggest end = start + 1 hr
-                                const newEnd = new Date(e.target.value);
-                                newEnd.setHours(newEnd.getHours() + 1);
-                                setEndTime(newEnd.toISOString().slice(0, 16));
-                            }}
+                            value={startTime}
+                            onChange={e => handleStartChange(e.target.value)}
+                            onBlur={e => handleStartBlur(e.target.value)}
                             className={inputCls}
                         />
+                        <p className="text-[10px] text-slate-400 font-medium mt-1.5 ml-1">
+                            ⏱ Only <strong>:00</strong> and <strong>:30</strong> minute marks are accepted — auto-snapped on selection.
+                        </p>
                     </div>
 
-                    {/* Booking End Time */}
+                    <div className="border-t border-slate-100" />
+
+                    {/* ── Duration Presets ── */}
                     <div>
-                        <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">
+                        <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
-                            Booking End <span className="text-red-400 normal-case">*</span>
+                            Booking Duration <span className="text-red-400 normal-case">*</span>
                         </label>
-                        <input
-                            type="datetime-local"
-                            required
-                            min={arrivalTime}
-                            value={endTime}
-                            onChange={e => setEndTime(e.target.value)}
-                            className={inputCls}
-                        />
+
+                        <div className="grid grid-cols-2 gap-2.5">
+                            {DURATION_PRESETS.map(preset => {
+                                const isSelected = durationMins === preset.minutes;
+                                return (
+                                    <button
+                                        key={preset.label}
+                                        type="button"
+                                        onClick={() => { setDurationMins(preset.minutes); setErrorMsg(''); }}
+                                        className={`relative flex flex-col items-center justify-center gap-1 py-4 rounded-2xl border-2 font-bold transition-all duration-200
+                                            ${preset.minutes === null ? 'col-span-2' : ''}
+                                            ${isSelected
+                                                ? 'border-blue-500 bg-gradient-to-b from-blue-50 to-indigo-50 text-blue-700 shadow-md shadow-blue-100/60'
+                                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-200 hover:bg-white hover:text-blue-600'
+                                            }`}
+                                    >
+                                        {/* Selected check */}
+                                        {isSelected && (
+                                            <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-2.5 h-2.5 text-white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                            </div>
+                                        )}
+                                        <span className={`text-base font-black ${isSelected ? 'text-blue-700' : 'text-slate-700'}`}>
+                                            {preset.label}
+                                        </span>
+                                        {preset.tag && (
+                                            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${preset.tagCls}`}>
+                                                {preset.tag}
+                                            </span>
+                                        )}
+                                        {preset.minutes !== null && (
+                                            <span className="text-[10px] font-semibold text-slate-400">
+                                                {preset.minutes} min
+                                            </span>
+                                        )}
+                                        {preset.minutes === null && (
+                                            <span className="text-[10px] font-semibold text-slate-400">Set manually</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Custom end time input (only shown when Custom is selected) */}
+                        {durationMins === null && (
+                            <div className="mt-3 animate-fade-in">
+                                <label className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+                                    Custom End Time <span className="text-red-400 normal-case">*</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    required
+                                    min={startTime}
+                                    value={customEndTime}
+                                    onChange={e => handleCustomEndChange(e.target.value)}
+                                    className={inputCls}
+                                />
+                                <p className="text-[10px] text-slate-400 font-medium mt-1.5 ml-1">
+                                    ⏱ Minutes are automatically rounded to <strong>:00</strong> or <strong>:30</strong>.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Grace period info box */}
+                    {/* ── Auto End Time Summary Card ── */}
+                    {endDisplay && !isNaN(endDisplay) && (
+                        <div className={`rounded-2xl border-2 px-4 py-4 flex items-center gap-4 transition-all duration-300
+                            ${durationMins !== null
+                                ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'
+                                : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+                            }`}>
+                            {/* Start */}
+                            <div className="flex-1 text-center">
+                                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">Start</p>
+                                <p className="text-lg font-black text-slate-800 tabular-nums">
+                                    {!isNaN(parsedStart) ? fmtDisplay(parsedStart) : '—'}
+                                </p>
+                            </div>
+
+                            {/* Arrow + duration pill */}
+                            <div className="flex flex-col items-center gap-1">
+                                <div className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold
+                                    ${durationMins !== null ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                    {durationMins !== null
+                                        ? (durationMins >= 60 ? `${durationMins/60} hr` : `${durationMins}m`)
+                                        : 'Custom'
+                                    }
+                                </div>
+                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-400">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+
+                            {/* End */}
+                            <div className="flex-1 text-center">
+                                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5">
+                                    End {durationMins !== null && <span className="text-emerald-600">(auto)</span>}
+                                </p>
+                                <p className="text-lg font-black text-slate-800 tabular-nums">
+                                    {fmtDisplay(endDisplay)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Booking Rules info ── */}
                     <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-2xl px-4 py-3.5">
                         <div className="w-8 h-8 bg-sky-100 rounded-xl flex items-center justify-center flex-shrink-0">
                             <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-sky-600">
@@ -532,7 +740,7 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                         </div>
                     </div>
 
-                    {/* Error Message */}
+                    {/* Error */}
                     {errorMsg && (
                         <div className="bg-red-50 text-red-600 text-[11px] font-bold px-4 py-3 rounded-2xl border border-red-200 flex items-center gap-2 animate-fade-in shadow-sm">
                             <FaExclamationTriangle className="text-[12px] flex-shrink-0" />
@@ -540,7 +748,7 @@ const ReservationModal = ({ slot, zone, onClose, onConfirm, loading, defaultVehi
                         </div>
                     )}
 
-                    {/* CTA Button */}
+                    {/* CTA */}
                     <button
                         type="button"
                         onClick={handleSubmit}
@@ -636,9 +844,71 @@ const ExtendBookingModal = ({ booking, onClose, onConfirm, loading }) => {
 };
 
 
+// ── Cancel Confirmation Modal ─────────────────────────────────────────────────
+const CancelConfirmModal = ({ onConfirm, onClose, loading }) => {
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = 'unset'; };
+    }, []);
+
+    return (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"
+            onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100 animate-modal-in">
+
+
+                {/* Icon + Title */}
+                <div className="px-6 pt-6 pb-4 flex flex-col items-center text-center">
+                    <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4 border-2 border-red-100">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 text-red-500">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-slate-800 mb-2">Cancel Booking?</h3>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                        Are you sure you want to cancel this booking?{' '}
+                        <strong className="text-slate-700">This action cannot be undone.</strong>
+                    </p>
+                </div>
+
+                {/* Buttons */}
+                <div className="px-6 pb-6 flex flex-col gap-3">
+                    <button
+                        id="confirm-cancel-booking-btn"
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2
+                            bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20
+                            disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading
+                            ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            : <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                        }
+                        Yes, Cancel Booking
+                    </button>
+                    <button
+                        id="keep-booking-btn"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="w-full py-3.5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2
+                            bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all border border-slate-200
+                            disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+                        No, Keep Booking
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 const StudentDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     // Zone stats
     const [zoneStats, setZoneStats] = useState({});
@@ -661,6 +931,13 @@ const StudentDashboard = () => {
     // Extension modal
     const [showExtendModal, setShowExtendModal] = useState(false);
     const [extendLoading, setExtendLoading] = useState(false);
+
+    // Cancel confirmation modal
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+    // Track previous booking status for real-time notifications
+    const prevBookingStatusRef = useRef(null);
+    const prevBookingIdRef = useRef(null);
 
     // Time filter for zone modal
     const [timeFilter, setTimeFilter] = useState({ start: '', end: '' });
@@ -691,7 +968,53 @@ const StudentDashboard = () => {
     const fetchActiveBooking = useCallback(async () => {
         try {
             const { data } = await api.get('/bookings/myactive');
-            setActiveBooking(data || null);
+            const booking = data || null;
+
+            // ── Real-time status change notifications ─────────────────────────
+            if (booking) {
+                const prevStatus = prevBookingStatusRef.current;
+                const prevId     = prevBookingIdRef.current;
+                const sameBooking = prevId === booking._id;
+
+                if (sameBooking && prevStatus && prevStatus !== booking.status) {
+                    if (booking.status === 'occupied' && prevStatus === 'active') {
+                        // Guard approved (verified)
+                        window.dispatchEvent(new CustomEvent('solopark:notify', {
+                            detail: {
+                                title: 'Booking Approved ✅',
+                                message: 'Your slot booking has been approved by the guard.',
+                                type: 'success'
+                            }
+                        }));
+                    }
+                }
+
+                prevBookingStatusRef.current = booking.status;
+                prevBookingIdRef.current     = booking._id;
+            } else {
+                // booking became null — check if previous was active (rejected/cancelled by guard)
+                const prevStatus = prevBookingStatusRef.current;
+                if (prevStatus === 'active' && prevBookingIdRef.current) {
+                    // fetch the old booking directly to see if it was cancelled by someone else
+                    try {
+                        const { data: old } = await api.get(`/bookings/mybookings`);
+                        const lastBooking = old?.[0];
+                        if (lastBooking && lastBooking._id === prevBookingIdRef.current && lastBooking.status === 'cancelled') {
+                            window.dispatchEvent(new CustomEvent('solopark:notify', {
+                                detail: {
+                                    title: 'Booking Rejected ❌',
+                                    message: 'Your slot booking request has been rejected.',
+                                    type: 'error'
+                                }
+                            }));
+                        }
+                    } catch { /* silent */ }
+                }
+                prevBookingStatusRef.current = null;
+                prevBookingIdRef.current     = null;
+            }
+
+            setActiveBooking(booking);
         } catch { setActiveBooking(null); }
     }, []);
 
@@ -828,9 +1151,8 @@ const StudentDashboard = () => {
             setSelectedSlot(slot);
             setShowReserveModal(true);
         } else if (status === 'reserved' && activeBooking?.slot?._id === slot._id) {
-            if (window.confirm('You have reserved this slot. Would you like to cancel your reservation?')) {
-                handleCancel();
-            }
+            // Show confirmation modal instead of window.confirm
+            setShowCancelConfirm(true);
         }
     };
 
@@ -845,7 +1167,15 @@ const StudentDashboard = () => {
                 startTime: new Date(startTime).toISOString(),
                 endTime: new Date(endTime).toISOString(),
             });
-            addToast(`Slot ${selectedSlot.slotNumber} booked successfully! ⏳`, 'info');
+            // Notify bell: submitted & pending
+            window.dispatchEvent(new CustomEvent('solopark:notify', {
+                detail: {
+                    title: 'Booking Request Submitted 🕐',
+                    message: 'Your slot booking request has been submitted and is pending guard approval.',
+                    type: 'info'
+                }
+            }));
+            addToast('Booking submitted! Pending guard approval.', 'info');
             setShowReserveModal(false);
             setSelectedSlot(null);
             await fetchActiveBooking();
@@ -859,13 +1189,16 @@ const StudentDashboard = () => {
 
 
 
-    // ── Cancel booking ────────────────────────────────────────────────────────
+    // ── Cancel booking (actual API call) ─────────────────────────────────────
     const handleCancel = async () => {
         if (!activeBooking) return;
         setBookingActionLoading(true);
         try {
             await api.put(`/bookings/${activeBooking._id}/cancel`);
+            prevBookingStatusRef.current = null;
+            prevBookingIdRef.current     = null;
             setActiveBooking(null);
+            setShowCancelConfirm(false);
             addToast('Reservation cancelled. Slot is now free.', 'success');
             await loadZoneStats();
             if (activeModal) { const d = await fetchZoneSlots(activeModal); setSlots(d); }
@@ -914,8 +1247,17 @@ const StudentDashboard = () => {
     const totalOccupied = Object.values(zoneStats).reduce((a, z) => a + z.occupied, 0);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 pt-8 pb-20 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 pt-4 md:pt-5 lg:pt-6 pb-12 px-4 md:px-6 lg:px-8">
             <Toast toasts={toasts} />
+
+            {/* Cancel Confirmation Modal */}
+            {showCancelConfirm && (
+                <CancelConfirmModal
+                    onConfirm={handleCancel}
+                    onClose={() => setShowCancelConfirm(false)}
+                    loading={bookingActionLoading}
+                />
+            )}
 
             {/* Reservation Modal */}
             {showReserveModal && selectedSlot && (
@@ -941,24 +1283,27 @@ const StudentDashboard = () => {
                 />
             )}
 
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-full mx-auto px-2 md:px-4">
 
                 {/* ── Header ── */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-3">
                     <div>
-                        <p className="text-sm font-semibold text-blue-500 uppercase tracking-widest mb-1">Smart Parking</p>
-                        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+                        <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-0.5">Smart Parking</p>
+                        <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                             Welcome back, <span className="text-blue-600">{user?.name?.split(' ')[0] ?? 'Student'}</span> 👋
                         </h1>
-                        <p className="text-slate-400 mt-1 font-medium">Select a zone to view and reserve parking slots.</p>
+                        <p className="text-slate-400 text-sm mt-0.5 font-medium">Select a zone to view and reserve parking slots.</p>
                     </div>
-                    <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-5 py-3 shadow-sm self-start md:self-auto">
-                        <Icons.Clock />
-                        <div>
-                            <p className="text-xs text-slate-400 font-medium">Current Time</p>
-                            <p className="text-base font-bold text-slate-700 tabular-nums">
-                                {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                            </p>
+                    <div className="flex items-center gap-3 self-start md:self-auto">
+                        <NotificationBell />
+                        <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-sm">
+                            <Icons.Clock />
+                            <div>
+                                <p className="text-[10px] text-slate-400 font-medium">Current Time</p>
+                                <p className="text-sm font-bold text-slate-700 tabular-nums">
+                                    {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -968,7 +1313,7 @@ const StudentDashboard = () => {
                     <div ref={reservationRef}>
                         <ReservationBanner
                             booking={activeBooking}
-                            onCancel={handleCancel}
+                            onCancel={() => setShowCancelConfirm(true)}
                             onExtend={() => setShowExtendModal(true)}
                             loading={bookingActionLoading}
                         />
@@ -976,7 +1321,7 @@ const StudentDashboard = () => {
                 )}
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                     {[
                         {
                             label: 'Total Slots', value: totalSlots, icon: <Icons.Stats />, color: 'text-indigo-600 bg-indigo-50',
@@ -997,10 +1342,10 @@ const StudentDashboard = () => {
                     ].map((s, i) => (
                         <div key={i}
                             onClick={s.action}
-                            className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-lg active:scale-95`}>
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${s.color}`}>{s.icon}</div>
+                            className={`bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center gap-3 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-md active:scale-95`}>
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${s.color}`}>{s.icon}</div>
                             <div>
-                                <p className="text-2xl font-extrabold text-slate-800">{statsLoading ? <span className="text-slate-300 animate-pulse">…</span> : s.value}</p>
+                                <p className="text-xl font-extrabold text-slate-800">{statsLoading ? <span className="text-slate-300 animate-pulse">…</span> : s.value}</p>
                                 <p className="text-xs text-slate-400 font-medium">{s.label}</p>
                             </div>
                         </div>
@@ -1008,42 +1353,90 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* ── Zone Cards ── */}
-                <div ref={zonesRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div ref={zonesRef} className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {ZONES.map((zone) => {
                         const stats = zoneStats[zone.id] || { total: 0, free: 0, reserved: 0, occupied: 0 };
                         const VehicleIcon = Icons[zone.vehicleIcon];
+                        const pct = stats.total > 0 ? Math.round((stats.free / stats.total) * 100) : 0;
+                        const ZONE_IMGS = { HCK: '/hck.jpg', WLV: '/wlv.jpg', ING: '/ing.jpg' };
+                        const barColor = pct > 60 ? 'bg-emerald-500' : pct > 30 ? 'bg-amber-400' : 'bg-red-400';
+
                         return (
-                            <div key={zone.id} onClick={() => openZoneModal(zone.id)}
-                                className="group bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-xl transition-all duration-300">
-                                <div className={`bg-gradient-to-br ${zone.color.bg} p-6 relative overflow-hidden`}>
-                                    <div className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10" />
-                                    <div className="relative z-10">
-                                        <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white mb-3">
-                                            <VehicleIcon />{zone.type}
+                            <div key={zone.id} onClick={() => navigate(`/student/zone/${zone.id}`)}
+                                className="group bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden cursor-pointer hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 flex flex-col">
+
+                                {/* ── Photo Hero ── */}
+                                <div className="relative h-52 overflow-hidden flex-shrink-0">
+                                    <img
+                                        src={ZONE_IMGS[zone.id]}
+                                        alt={zone.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                                    />
+                                    {/* Gradient overlay — bottom-heavy for text */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
+
+                                    {/* Top-right ambient glow matching zone colour */}
+                                    <div className={`absolute -top-8 -right-8 w-32 h-32 rounded-full bg-gradient-to-br ${zone.color.bg} opacity-40 blur-2xl`} />
+
+                                    {/* Vehicle type badge — glassmorphism pill */}
+                                    <div className="absolute top-3.5 left-3.5">
+                                        <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white text-[11px] font-extrabold px-3 py-1.5 rounded-full shadow-sm tracking-wide">
+                                            <VehicleIcon />
+                                            {zone.type}
                                         </span>
-                                        <h2 className="text-2xl font-extrabold text-white">{zone.name}</h2>
-                                        <p className="text-white/70 text-sm font-medium">{zone.label}</p>
+                                    </div>
+
+                                    {/* Zone name + label — anchored to photo bottom */}
+                                    <div className="absolute bottom-4 left-4 right-4">
+                                        <h2 className="text-[1.45rem] font-extrabold text-white tracking-tight drop-shadow leading-tight">
+                                            {zone.name}
+                                        </h2>
+                                        <p className="text-white/60 text-sm font-semibold mt-0.5 tracking-wide">{zone.label}</p>
                                     </div>
                                 </div>
-                                <div className="p-5">
-                                    <div className="flex gap-2 mb-4">
-                                        <div className="flex-1 bg-emerald-50 rounded-xl p-3 text-center">
-                                            <p className="text-xl font-extrabold text-emerald-600">{statsLoading ? '…' : stats.free}</p>
-                                            <p className="text-xs font-semibold text-emerald-500">Free</p>
+
+                                {/* ── Card Body ── */}
+                                <div className="px-4 pt-4 pb-4 flex flex-col flex-grow">
+
+                                    {/* Stat mini-cards */}
+                                    <div className="grid grid-cols-3 gap-2 mb-3.5">
+                                        <div className="bg-emerald-50 rounded-xl py-3 text-center border border-emerald-100/80 hover:bg-emerald-100/60 transition-colors">
+                                            <p className="text-xl font-extrabold text-emerald-600 leading-none mb-0.5">
+                                                {statsLoading ? <span className="text-emerald-300 text-sm animate-pulse">…</span> : stats.free}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Free</p>
                                         </div>
-                                        <div className="flex-1 bg-amber-50 rounded-xl p-3 text-center">
-                                            <p className="text-xl font-extrabold text-amber-500">{statsLoading ? '…' : stats.reserved || 0}</p>
-                                            <p className="text-xs font-semibold text-amber-400">Reserved</p>
+                                        <div className="bg-amber-50 rounded-xl py-3 text-center border border-amber-100/80 hover:bg-amber-100/60 transition-colors">
+                                            <p className="text-xl font-extrabold text-amber-500 leading-none mb-0.5">
+                                                {statsLoading ? <span className="text-amber-300 text-sm animate-pulse">…</span> : stats.reserved || 0}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Reserved</p>
                                         </div>
-                                        <div className="flex-1 bg-red-50 rounded-xl p-3 text-center">
-                                            <p className="text-xl font-extrabold text-red-500">{statsLoading ? '…' : stats.occupied}</p>
-                                            <p className="text-xs font-semibold text-red-400">Booked</p>
+                                        <div className="bg-red-50 rounded-xl py-3 text-center border border-red-100/80 hover:bg-red-100/60 transition-colors">
+                                            <p className="text-xl font-extrabold text-red-500 leading-none mb-0.5">
+                                                {statsLoading ? <span className="text-red-300 text-sm animate-pulse">…</span> : stats.occupied}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Occupied</p>
                                         </div>
                                     </div>
-                                    <AvailBar available={stats.free} total={stats.total} barClass={zone.color.bar} />
-                                    <button className={`mt-4 w-full py-3 rounded-xl font-bold text-sm transition-all duration-300
-                                        text-slate-600 bg-slate-50 border border-slate-200
-                                        group-hover:bg-gradient-to-r group-hover:${zone.color.bg} group-hover:text-white group-hover:border-transparent group-hover:shadow-lg`}>
+
+                                    {/* Availability bar */}
+                                    <div className="mb-4">
+                                        <div className="flex justify-between text-[11px] font-semibold text-slate-400 mb-1.5">
+                                            <span>{statsLoading ? '…' : stats.free} available</span>
+                                            <span>{statsLoading ? '…' : stats.total - stats.free} occupied</span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div className={`h-full rounded-full transition-all duration-700 ${barColor}`}
+                                                style={{ width: `${pct}%` }} />
+                                        </div>
+                                        <p className="text-right text-[10px] text-slate-400 mt-1 font-medium">{pct}% free</p>
+                                    </div>
+
+                                    {/* CTA Button */}
+                                    <button className={`mt-auto w-full py-3 rounded-xl font-bold text-sm transition-all duration-300 border-2
+                                        text-slate-600 bg-white border-slate-200
+                                        group-hover:bg-gradient-to-r group-hover:${zone.color.bg} group-hover:text-white group-hover:border-transparent group-hover:shadow-lg group-hover:scale-[1.01]`}>
                                         View Slots →
                                     </button>
                                 </div>
@@ -1053,11 +1446,11 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* ── Legend ── */}
-                <div className="mt-8 flex flex-wrap gap-6 justify-center text-sm font-semibold text-slate-500">
-                    <span className="flex items-center gap-2"><span className="w-4 h-4 rounded bg-emerald-500 block" />Available</span>
-                    <span className="flex items-center gap-2"><span className="w-4 h-4 rounded bg-amber-400 block" />Reserved</span>
-                    <span className="flex items-center gap-2"><span className="w-4 h-4 rounded bg-red-500 block" />Occupied</span>
-                    <span className="flex items-center gap-2"><span className="w-4 h-4 rounded bg-blue-500 block" />Visitor</span>
+                <div className="mt-5 flex flex-wrap gap-4 justify-center text-xs font-semibold text-slate-400">
+                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 block" />Available</span>
+                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 block" />Reserved</span>
+                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 block" />Occupied</span>
+                    <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 block" />Visitor</span>
                 </div>
             </div>
 
@@ -1076,7 +1469,7 @@ const StudentDashboard = () => {
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="hidden sm:flex items-center gap-4 bg-white/20 rounded-2xl px-4 py-2">
-                                    {[['Free', freeCount, 'text-emerald-200'], ['Reserved', reservedCount, 'text-amber-200'], ['Booked', occupiedCount, 'text-red-200'], ['Total', slots.length, 'text-white']].map(([l, v, c]) => (
+                                    {[['Free', freeCount, 'text-emerald-200'], ['Reserved', reservedCount, 'text-amber-200'], ['Occupied', occupiedCount, 'text-red-200'], ['Total', slots.length, 'text-white']].map(([l, v, c]) => (
                                         <div key={l} className="text-center">
                                             <p className={`text-lg font-extrabold text-white`}>{v}</p>
                                             <p className={`text-xs font-semibold ${c}`}>{l}</p>
@@ -1152,7 +1545,7 @@ const StudentDashboard = () => {
                                         <strong>{new Date(timeFilter.start).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
                                         {' → '}
                                         <strong>{new Date(timeFilter.end).toLocaleString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong>.
-                                        {' '}Green = free for this time. Red = already booked.
+                                        {' '}Green = free for this time. Red = already occupied.
                                     </span>
                                 </div>
                             )}
@@ -1178,7 +1571,7 @@ const StudentDashboard = () => {
                             <div className="ml-auto flex items-center gap-4 text-xs font-semibold text-slate-500">
                                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 block" />Free</span>
                                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-400 block" />Reserved</span>
-                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 block" />Booked</span>
+                                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500 block" />Occupied</span>
                                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-blue-500 block" />Visitor</span>
                             </div>
                         </div>

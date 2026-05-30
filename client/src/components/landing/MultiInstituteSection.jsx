@@ -26,7 +26,7 @@ const institutes = [
 
 const MultiInstituteSection = () => {
     return (
-        <section className="py-10 bg-slate-900 text-white relative overflow-hidden">
+        <section id="how-it-works" className="py-10 bg-slate-900 text-white relative overflow-hidden">
             {/* Background elements */}
             <div className="absolute top-0 w-full h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent"></div>
             

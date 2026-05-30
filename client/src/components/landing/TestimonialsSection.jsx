@@ -27,11 +27,11 @@ const testimonials = [
 
 const TestimonialsSection = () => {
     return (
-        <section className="py-10 bg-slate-50 relative">
-            <div className="container mx-auto px-6">
-                <div className="text-center max-w-2xl mx-auto mb-7">
-                    <span className="text-blue-600 font-bold tracking-wider uppercase text-xs mb-2 block">Trusted by the Community</span>
-                    <h2 className="text-3xl font-extrabold text-slate-800 mb-2 tracking-tight">
+        <section id="testimonials" className="py-24 bg-slate-50 border-t border-slate-100 relative scroll-mt-[68px]">
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="text-center max-w-2xl mx-auto mb-12">
+                    <span className="text-blue-600 font-semibold text-[11px] tracking-widest uppercase mb-3 block">Testimonials</span>
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-4">
                         Don't just take our word for it.
                     </h2>
                 </div>

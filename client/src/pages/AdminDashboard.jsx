@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -309,7 +310,9 @@ const AdminDashboard = () => {
     const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
     /* ── UI ────────────────────────────────────────────────────────────────── */
-    const [activeTab, setActiveTab]         = useState('overview');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'overview';
+    const setActiveTab = (tab) => setSearchParams({ tab });
     const [loading, setLoading]             = useState(true);
     const [lastUpdated, setLastUpdated]     = useState(null);
 
@@ -592,7 +595,7 @@ const AdminDashboard = () => {
             {/* Toast notifications */}
             <Toast toasts={toasts} />
 
-            <div className="min-h-screen bg-slate-50 pt-8 pb-16 px-4">
+            <div className="min-h-screen bg-slate-50 pt-4 md:pt-5 lg:pt-6 pb-16 px-4 md:px-6 lg:px-8">
                 <div className="max-w-7xl mx-auto">
 
                     {/* ── Header ─────────────────────────────────────────── */}

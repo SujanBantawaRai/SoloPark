@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaArrowRight, FaCheckCircle, FaShieldAlt, FaMagic, FaKey } from 'react-icons/fa';
+import SoloParkLogo from '../components/landing/SoloParkLogo';
 
 const Login = () => {
     const [quickRole, setQuickRole] = useState('');
@@ -72,12 +73,14 @@ const Login = () => {
     const [fpEmail, setFpEmail]       = useState('');
     const [fpOtp, setFpOtp]           = useState('');
     const [fpNewPw, setFpNewPw]       = useState('');
+    const [fpConfirmPw, setFpConfirmPw] = useState('');
     const [fpShowPw, setFpShowPw]     = useState(false);
+    const [fpShowConfirmPw, setFpShowConfirmPw] = useState(false);
     const [fpLoading, setFpLoading]   = useState(false);
     const [fpError, setFpError]       = useState('');
     const [fpSuccess, setFpSuccess]   = useState('');
 
-    const openFp = () => { setFpOpen(true); setFpStep(1); setFpEmail(''); setFpOtp(''); setFpNewPw(''); setFpError(''); setFpSuccess(''); };
+    const openFp = () => { setFpOpen(true); setFpStep(1); setFpEmail(''); setFpOtp(''); setFpNewPw(''); setFpConfirmPw(''); setFpShowPw(false); setFpShowConfirmPw(false); setFpError(''); setFpSuccess(''); };
     const closeFp = () => setFpOpen(false);
 
     const handleFpSendOtp = async (e) => {
@@ -128,36 +131,33 @@ const Login = () => {
 
                 {/* Top Branding */}
                 <div className="relative z-10 p-10">
-                    <Link to="/" className="inline-flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">
-                            S
-                        </div>
-                        <span className="text-2xl font-black tracking-tight text-white/90">SoloPark</span>
+                    <Link to="/" className="relative z-10 flex items-center">
+                        <SoloParkLogo showText={true} className="w-11 h-11" textClass="text-3xl" lightText={true} />
                     </Link>
                 </div>
 
                 {/* Main Content */}
                 <div className="relative z-10 p-10 mb-auto max-w-lg mt-2">
-                    <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/30 rounded-full px-4 py-2 mb-8">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs font-bold text-blue-300 tracking-wider uppercase">Live Parking Intelligence</span>
+                    <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/30 rounded-full px-3.5 py-1.5 mb-6">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[10px] font-bold text-blue-300 tracking-wider uppercase">Live Parking Intelligence</span>
                     </div>
-                    <h1 className="text-4xl xl:text-5xl font-extrabold mb-6 leading-[1.1]">
+                    <h1 className="text-3xl xl:text-[40px] font-extrabold mb-5 leading-[1.2]">
                         <span className="text-white">Welcome back to</span><br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Seamless Campus Parking</span>
                     </h1>
-                    <p className="text-slate-400 text-lg mb-10 leading-relaxed font-medium">
+                    <p className="text-slate-400 text-sm md:text-base mb-8 leading-relaxed font-normal">
                         Access your dashboard to manage reservations, track live slots, and update your profile instantly.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         {[
-                            { icon: <FaShieldAlt className="text-indigo-400" />, label: 'Secure Login' },
-                            { icon: <FaCheckCircle className="text-emerald-400" />, label: 'Verified Access' },
+                            { icon: <FaShieldAlt className="text-indigo-400 text-xs" />, label: 'Secure Login' },
+                            { icon: <FaCheckCircle className="text-emerald-400 text-xs" />, label: 'Verified Access' },
                         ].map((feature, idx) => (
-                            <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-2xl px-5 py-3 border border-white/10 backdrop-blur-md shadow-sm hover:bg-white/10 transition-colors">
+                            <div key={idx} className="flex items-center gap-2.5 bg-white/5 rounded-xl px-4 py-2.5 border border-white/10 backdrop-blur-md shadow-sm hover:bg-white/10 transition-colors">
                                 {feature.icon}
-                                <span className="text-sm font-semibold text-slate-200">{feature.label}</span>
+                                <span className="text-xs font-semibold text-slate-200">{feature.label}</span>
                             </div>
                         ))}
                     </div>
@@ -173,32 +173,29 @@ const Login = () => {
             <div className="w-full lg:w-[55%] flex flex-col items-center justify-start py-12 px-6 sm:px-12 md:px-20 lg:px-24 xl:px-32 overflow-y-auto h-screen bg-white relative custom-scrollbar">
                 {/* Mobile Logo */}
                 <div className="absolute top-8 left-8 lg:hidden">
-                    <Link to="/" className="inline-flex items-center gap-2.5 group">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-105 transition-transform">
-                            S
-                        </div>
-                        <span className="text-xl font-black tracking-tight text-slate-800">SoloPark</span>
+                    <Link to="/" className="inline-flex items-center group">
+                        <SoloParkLogo showText={true} className="w-8 h-8" textClass="text-xl" lightText={false} />
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[420px] pt-16 lg:pt-0">
-                    <div className="mb-4 text-center lg:text-left">
-                        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-1">Sign In</h2>
-                        <p className="text-slate-500 font-medium">Please enter your credentials to access your account.</p>
+                <div className="w-full max-w-[400px] pt-16 lg:pt-0">
+                    <div className="mb-6 text-center lg:text-left">
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight mb-1.5">Sign In</h2>
+                        <p className="text-sm text-slate-400 font-normal">Please enter your credentials to access your account.</p>
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-100 text-red-700 p-4 rounded-2xl mb-3 text-sm flex items-start gap-3 shadow-sm animate-fade-in font-medium">
+                        <div className="bg-red-50 border border-red-100 text-red-700 p-4 rounded-2xl mb-4 text-sm flex items-start gap-3 shadow-sm animate-fade-in font-medium">
                             <FaShieldAlt className="mt-0.5 flex-shrink-0 text-red-500" />
                             <span>{error}</span>
                         </div>
                     )}
 
-                    <form onSubmit={handleLogin} className="space-y-3">
+                    <form onSubmit={handleLogin} className="space-y-4">
                         {/* Quick-fill helper (Premium Style) */}
                         <div className="relative group">
-                            <label className="block text-sm font-bold text-slate-700 mb-1 ml-1 flex items-center gap-1.5">
-                                <FaMagic className="text-blue-500 text-xs" /> Quick Fill
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5 ml-1 flex items-center gap-1.5 uppercase tracking-wider">
+                                <FaMagic className="text-blue-500 text-[10px]" /> Quick Fill
                             </label>
                             <select
                                 className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500 transition-all font-semibold text-slate-700 text-sm appearance-none cursor-pointer"
@@ -212,13 +209,13 @@ const Login = () => {
                                 <option value="student">Student (User)</option>
                             </select>
                             <div className="absolute right-4 bottom-3.5 pointer-events-none text-slate-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
 
                         {/* Email */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 mb-1 ml-1">Email Address</label>
+                            <label className="block text-xs font-bold text-slate-600 mb-1.5 ml-1 uppercase tracking-wider">Email Address</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
                                     <FaEnvelope className="text-sm" />
@@ -236,9 +233,9 @@ const Login = () => {
 
                         {/* Password */}
                         <div>
-                            <div className="flex items-center justify-between mb-1 ml-1">
-                                <label className="block text-sm font-bold text-slate-700">Password</label>
-                                <button type="button" onClick={openFp} className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                            <div className="flex items-center justify-between mb-1.5 ml-1">
+                                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">Password</label>
+                                <button type="button" onClick={openFp} className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors">
                                     Forgot password?
                                 </button>
                             </div>
@@ -271,7 +268,7 @@ const Login = () => {
                                 id="remember"
                                 className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
                             />
-                            <label htmlFor="remember" className="text-sm font-semibold text-slate-500 cursor-pointer select-none">
+                            <label htmlFor="remember" className="text-sm font-semibold text-slate-400 cursor-pointer select-none">
                                 Keep me signed in
                             </label>
                         </div>
@@ -281,7 +278,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-4 rounded-2xl transition-all duration-300 font-extrabold text-base shadow-xl shadow-blue-500/20 focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 flex items-center justify-center gap-2.5 group"
+                                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-2xl transition-all duration-300 font-bold text-sm shadow-lg shadow-blue-500/25 focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group cursor-pointer"
                             >
                                 {submitting ? (
                                     <div className="flex items-center gap-2">
@@ -291,15 +288,15 @@ const Login = () => {
                                 ) : (
                                     <>
                                         <span>Sign In</span>
-                                        <FaArrowRight className="group-hover:translate-x-1 transition-transform opacity-80 text-sm" />
+                                        <FaArrowRight className="group-hover:translate-x-1 transition-transform opacity-80 text-xs" />
                                     </>
                                 )}
                             </button>
                         </div>
                     </form>
 
-                    <div className="mt-10 text-center pb-12 lg:pb-0">
-                        <p className="text-slate-500 font-medium text-sm">
+                    <div className="mt-8 text-center pb-12 lg:pb-0">
+                        <p className="text-slate-400 font-normal text-sm">
                             Don't have an account?{' '}
                             <Link to="/register" className="text-blue-600 hover:text-blue-700 font-bold hover:underline underline-offset-4 transition-colors">
                                 Register now
@@ -392,6 +389,8 @@ const Login = () => {
                             {fpStep === 3 && (
                                 <form onSubmit={handleFpReset} className="space-y-4">
                                     <p className="text-sm text-slate-500 font-medium">Choose a strong new password for your account.</p>
+                                    
+                                    {/* New Password */}
                                     <div>
                                         <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">New Password</label>
                                         <div className="relative">
@@ -404,7 +403,35 @@ const Login = () => {
                                         </div>
                                         {fpNewPw && fpNewPw.length < 6 && <p className="text-xs text-red-500 font-semibold mt-1.5 ml-1">Must be at least 6 characters</p>}
                                     </div>
-                                    <button type="submit" disabled={fpLoading || fpNewPw.length < 6}
+
+                                    {/* Confirm Password */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                                        <div className="relative">
+                                            <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                                            <input type={fpShowConfirmPw ? 'text' : 'password'} required minLength={6} value={fpConfirmPw} onChange={e => setFpConfirmPw(e.target.value)} placeholder="Re-enter your new password"
+                                                className="w-full pl-11 pr-12 py-3 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/15 focus:border-blue-500 transition-all" />
+                                            <button type="button" onClick={() => setFpShowConfirmPw(p => !p)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                                                {fpShowConfirmPw ? <FaEyeSlash /> : <FaEye />}
+                                            </button>
+                                        </div>
+                                        {/* Real-time Matching Feedback */}
+                                        {fpNewPw && fpConfirmPw && (
+                                            fpNewPw === fpConfirmPw ? (
+                                                <p className="text-xs text-emerald-600 font-semibold mt-1.5 ml-1 flex items-center gap-1">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                                                    Passwords match
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs text-red-500 font-semibold mt-1.5 ml-1 flex items-center gap-1">
+                                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                                    Passwords do not match
+                                                </p>
+                                            )
+                                        )}
+                                    </div>
+
+                                    <button type="submit" disabled={fpLoading || fpNewPw.length < 6 || fpNewPw !== fpConfirmPw}
                                         className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-teal-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                                         {fpLoading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Resetting...</> : <>Reset Password <FaCheckCircle className="text-xs" /></>}
                                     </button>

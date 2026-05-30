@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, Component } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import {
     FaShieldAlt, FaPlusCircle, FaSignOutAlt, FaHistory, FaCar,
@@ -686,7 +687,9 @@ const GuardDashboard = () => {
     const [logsLoading, setLogsLoading] = useState(true);
     const [availableSlots, setAvailableSlots] = useState([]);
     const [lastRefresh, setLastRefresh] = useState(new Date());
-    const [activeTab, setActiveTab] = useState('bookings');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'bookings';
+    const setActiveTab = (tab) => setSearchParams({ tab });
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [verifyingId, setVerifyingId] = useState(null);
     const [extendingId, setExtendingId] = useState(null);
@@ -924,8 +927,8 @@ const GuardDashboard = () => {
             <ToastContainer toasts={toasts} onDismiss={dismissToast} />
             <ManualEntryPanel open={manualPanelOpen} onClose={() => setManualPanelOpen(false)} onSuccess={handleManualSuccess} addToast={addToast} />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 pt-6 pb-14 px-4">
-                <div className="max-w-6xl mx-auto">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 pt-4 md:pt-5 lg:pt-6 pb-14 px-4 md:px-6 lg:px-8">
+                <div className="max-w-full mx-auto px-4 md:px-10">
 
                     {/* ── Header ───────────────────────────────────────────── */}
                     <div className="backdrop-blur-sm bg-white/70 border border-white/80 rounded-2xl px-5 py-4 mb-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -967,21 +970,21 @@ const GuardDashboard = () => {
                     </div>
 
                     {/* ── Stat Cards ───────────────────────────────────────── */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                         {statCards.map((card, i) => (
                             <div key={i} onClick={() => setActiveTab('bookings')}
-                                className={`bg-gradient-to-br ${card.bg} border ${card.border} rounded-2xl p-4 flex items-center gap-4
+                                className={`bg-gradient-to-br ${card.bg} border ${card.border} rounded-xl p-3 flex items-center gap-3
                                     hover:shadow-lg hover:scale-[1.03] active:scale-95 cursor-pointer transition-all duration-300 group`}>
-                                <div className={`p-3 rounded-xl ${card.iconBg} text-lg shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                                <div className={`p-2 rounded-lg ${card.iconBg} text-base shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                                     {card.icon}
                                 </div>
                                 <div>
-                                    <div className="text-3xl font-extrabold text-slate-800 tabular-nums">
+                                    <div className="text-xl font-extrabold text-slate-800 tabular-nums">
                                         <AnimatedNumber value={card.value} />
                                     </div>
                                     <div className="text-xs text-slate-500 font-semibold mt-0.5">{card.label}</div>
                                 </div>
-                                <div className={`ml-auto w-1 h-10 rounded-full bg-gradient-to-b ${card.gradient} opacity-40 group-hover:opacity-80 transition-opacity duration-300`} />
+                                <div className={`ml-auto w-1 h-7 rounded-full bg-gradient-to-b ${card.gradient} opacity-40 group-hover:opacity-80 transition-opacity duration-300`} />
                             </div>
                         ))}
                     </div>

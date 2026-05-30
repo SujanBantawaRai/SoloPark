@@ -1,130 +1,117 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaParking, FaArrowRight } from 'react-icons/fa';
+import { FaArrowRight, FaSignInAlt } from 'react-icons/fa';
+import { HiChevronDown } from 'react-icons/hi';
 
 const HeroSection = ({ user }) => {
     return (
-        <section className="relative min-h-screen flex items-center justify-center pt-20 pb-12 overflow-hidden">
-            {/* ── Fixed Top Header ── */}
-            <div className="absolute top-0 left-0 w-full px-6 py-6 lg:px-10 lg:py-8 z-50 flex items-center justify-between">
-                {/* Logo */}
-                <Link to="/" className="inline-flex items-center gap-2.5 group">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-105 transition-all">
-                        S
+        <section className="relative min-h-screen flex flex-col items-center justify-center pt-[68px] pb-16 overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/40">
+            {/* Subtle grid overlay */}
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    backgroundImage:
+                        'linear-gradient(to right, #c7d2fe18 1px, transparent 1px), linear-gradient(to bottom, #c7d2fe18 1px, transparent 1px)',
+                    backgroundSize: '52px 52px',
+                }}
+            />
+
+            {/* Soft blurred gradient orbs */}
+            <div className="absolute top-[-5%] left-[-5%] w-[420px] h-[420px] bg-blue-200/30 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-5%] w-[350px] h-[350px] bg-indigo-200/25 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center">
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-sm px-4 py-1.5 rounded-full mb-7">
+                    <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                    </span>
+                    <span className="text-[11px] font-semibold tracking-widest text-slate-600 uppercase">
+                        Now Supporting Multiple Institutions
+                    </span>
+                </div>
+
+                {/* Main Headline */}
+                <h1 className="text-5xl md:text-6xl lg:text-[72px] font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-5">
+                    The Future of{' '}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-600">
+                        Smart
+                    </span>
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-purple-700">
+                        Campus
+                    </span>{' '}
+                    Parking.
+                </h1>
+
+                {/* Subheadline */}
+                <p className="text-lg text-slate-500 mb-8 max-w-xl mx-auto leading-relaxed">
+                    Say goodbye to parking chaos. Real-time availability, seamless
+                    booking, and automated tracking for{' '}
+                    <strong className="text-slate-700 font-semibold">Users</strong>.
+                </p>
+
+                {/* CTAs */}
+                {user ? (
+                    <Link
+                        to={
+                            (user.role === 'admin' || user.role === 'super_admin')
+                                ? '/admin'
+                                : user.userType === 'guard'
+                                ? '/guard'
+                                : '/student'
+                        }
+                        className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-[15px] shadow-lg shadow-blue-500/25 transition-all duration-200"
+                    >
+                        Enter Dashboard <FaArrowRight className="text-sm" />
+                    </Link>
+                ) : (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+                        <Link
+                            to="/register"
+                            className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-[15px] shadow-lg shadow-blue-500/25 transition-all duration-200"
+                        >
+                            Get Started for Free <FaArrowRight className="text-sm" />
+                        </Link>
+                        <Link
+                            to="/login"
+                            className="inline-flex items-center gap-2.5 px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-700 rounded-full font-semibold text-[15px] border border-slate-200 shadow-sm transition-all duration-200"
+                        >
+                            <FaSignInAlt className="text-slate-400 text-sm" />
+                            Login to Account
+                        </Link>
                     </div>
-                    <span className="text-xl font-black tracking-tight text-slate-800">SoloPark</span>
-                </Link>
+                )}
 
-                {/* Right CTA Button (Reference Style) */}
-                <Link 
-                    to={user ? ((user.role === 'admin' || user.role === 'super_admin') ? '/admin' : (user.userType === 'guard') ? '/guard' : '/student') : '/register'} 
-                    className="group relative inline-flex items-center justify-center h-[48px] rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:-translate-y-0.5"
-                    style={{ minWidth: "185px" }}
-                >
-                    {/* Layer 1: Default State with Spinning Border */}
-                    <div className="absolute inset-0 rounded-full overflow-hidden opacity-100 group-hover:opacity-0 transition-opacity duration-500">
-                        <div className="absolute w-[200%] h-[500%] animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,rgba(168,85,247,0.5)_20%,rgba(168,85,247,1)_50%,transparent_80%)] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-                        <div className="absolute inset-[2px] rounded-full bg-[#0A0A0A] ring-1 ring-inset ring-white/5"></div>
-                    </div>
-
-                    {/* Layer 2: Hover State Full-Bleed Luminous Gradient */}
-                    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-in-out bg-gradient-to-r from-[#d8b4fe] via-[#a855f7] to-[#6366f1]"></div>
-
-                    {/* Layer 3: Content Shell */}
-                    <div className="relative flex items-center justify-center px-4 font-bold text-[11px] tracking-[0.15em] text-white z-10 w-full h-full pointer-events-none">
-                        {user ? (
-                            <span className="w-full text-center uppercase tracking-[0.15em]">GO TO DASHBOARD</span>
-                        ) : (
-                            <span className="grid items-center justify-items-center w-full h-full">
-                                {/* Default Text */}
-                                <span className="col-start-1 row-start-1 flex items-center transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-6 group-hover:opacity-0 uppercase">
-                                    PARK YOUR CAR
-                                </span>
-                            
-                                {/* Hover Text */}
-                                <span className="col-start-1 row-start-1 flex items-center gap-2 transform transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 uppercase">
-                                    <span>REGISTER</span>
-                                    <svg className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                                    </svg>
-                                </span>
-                            </span>
-                        )}
-                    </div>
-                </Link>
-            </div>
-            {/* Animated Background Gradients */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl mx-auto z-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400/30 rounded-full blur-[100px] mix-blend-multiply opacity-70 animate-blob"></div>
-                <div className="absolute top-[20%] right-[-10%] w-[400px] h-[400px] bg-purple-400/30 rounded-full blur-[100px] mix-blend-multiply opacity-70 animate-blob animation-delay-2000"></div>
-                <div className="absolute bottom-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-400/20 rounded-full blur-[100px] mix-blend-multiply opacity-70 animate-blob animation-delay-4000"></div>
-            </div>
-
-            <div className="container mx-auto px-6 relative z-10">
-                <div className="max-w-4xl mx-auto text-center">
-                    {/* Badge */}
-                    <div className="inline-flex items-center space-x-2 bg-white/60 backdrop-blur-md border border-white/40 shadow-sm px-3 py-1.5 rounded-full transform transition hover:scale-105 cursor-default">
-                        <span className="flex h-2 w-2 relative">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                        </span>
-                        <span className="text-xs font-semibold tracking-wide text-slate-800 uppercase">
-                            Now supporting multiple institutes
-                        </span>
-                    </div>
-
-                    {/* Main Headline */}
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mt-3 mb-3">
-                        The Future of <br className="hidden md:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                            Smart Campus Parking.
-                        </span>
-                    </h1>
-
-                    {/* Subheadline */}
-                    <p className="text-lg md:text-xl text-slate-600 mb-4 max-w-2xl mx-auto font-light leading-relaxed">
-                        Say goodbye to parking chaos. Real-time availability, seamless booking, and automated tracking for
-                        <strong className="font-semibold text-slate-800"> Users</strong>.
+                {/* Trust Indicators */}
+                <div className="mt-8 pt-6 border-t border-slate-200/60 max-w-3xl mx-auto">
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">
+                        Trusted by Forward-Thinking Institutions
                     </p>
-
-                    {/* CTAs */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                        {user ? (
-                            <Link
-                                to={(user.role === 'admin' || user.role === 'super_admin') ? '/admin' : (user.userType === 'guard') ? '/guard' : '/student'}
-                                className="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-base shadow-xl shadow-slate-900/20 transition-all hover:-translate-y-1 flex items-center justify-center group"
+                    <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-2">
+                        {[
+                            'Tech International',
+                            "St. John's University",
+                            'WLV Academy',
+                            'Northfield College',
+                            'Greenfield State',
+                            'Metro University',
+                        ].map((name) => (
+                            <span
+                                key={name}
+                                className="text-[13px] font-medium text-slate-400 italic"
                             >
-                                Enter Dashboard
-                                <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                            </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/register"
-                                    className="w-full sm:w-auto px-8 py-3.5 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-2xl font-bold text-[15px] tracking-wide shadow-[0_12px_35px_-10px_rgba(37,99,235,0.7)] hover:shadow-[0_20px_40px_-12px_rgba(37,99,235,0.9)] transition-all duration-300 hover:-translate-y-1 flex items-center justify-center"
-                                >
-                                    Get Started for Free
-                                </Link>
-                                <Link
-                                    to="/login"
-                                    className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-base shadow-sm transition-all hover:-translate-y-1 flex items-center justify-center"
-                                >
-                                    Login to Account
-                                </Link>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Trust Indicators */}
-                    <div className="mt-6 pt-4 border-t border-slate-200/60 max-w-2xl mx-auto">
-                        <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-2">Trusted by Forward-Thinking Institutions</p>
-                        <div className="flex justify-center items-center gap-6 md:gap-12 opacity-50 grayscale">
-                            <div className="text-lg font-black italic tracking-tighter">TECH INTL.</div>
-                            <div className="text-lg font-bold font-serif">St. John's Uni</div>
-                            <div className="text-lg font-mono font-bold tracking-tight">/WLV ACADEMY/</div>
-                        </div>
+                                {name}
+                            </span>
+                        ))}
                     </div>
                 </div>
+            </div>
+
+            {/* Scroll indicator */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-slate-400 animate-bounce">
+                <HiChevronDown className="text-2xl" />
             </div>
         </section>
     );

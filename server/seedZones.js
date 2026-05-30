@@ -14,8 +14,8 @@ const seedZones = async () => {
 
         const slots = [];
 
-        // HCK Block (35 slots: 1-35. 5 Visitor, 30 Student)
-        for (let i = 1; i <= 35; i++) {
+        // HCK Block (50 slots: 1-50. 5 Visitor, 45 Student)
+        for (let i = 1; i <= 50; i++) {
             slots.push({
                 slotNumber: `HCK-${i}`,
                 zoneName: 'HCK',
@@ -27,21 +27,24 @@ const seedZones = async () => {
             });
         }
 
-        // WLV Block (15 slots: 1-15. Car only)
-        for (let i = 1; i <= 15; i++) {
+        // WLV Block (60 slots total. B1: 1-8 Car, B2: 9-48 Bike/Scooter, B3: 49-60 Car)
+        for (let i = 1; i <= 60; i++) {
+            let vType = 'Car';
+            if (i >= 9 && i <= 48) vType = 'Scooter';
+
             slots.push({
                 slotNumber: `WLV-${i}`,
                 zoneName: 'WLV',
                 zone: 'WLV Block',
-                vehicleType: 'Car',
+                vehicleType: vType,
                 slotType: 'Student',
                 status: 'free',
                 isBooked: false
             });
         }
 
-        // ING Block (60 slots: 1-60. Scooter/Bike only) - Using Scooter for enum
-        for (let i = 1; i <= 60; i++) {
+        // ING Block (110 slots: C4=1-20, C1=21-50, C3=51-70, C2=71-110. All Scooter/Bike)
+        for (let i = 1; i <= 110; i++) {
             slots.push({
                 slotNumber: `ING-${i}`,
                 zoneName: 'ING',

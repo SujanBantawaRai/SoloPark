@@ -11,6 +11,24 @@ export const AuthProvider = ({ children }) => {
         checkUserLoggedIn();
     }, []);
 
+    useEffect(() => {
+        const handleStorage = (event) => {
+            if (event.key === 'userInfo') {
+                if (event.newValue) {
+                    try {
+                        setUser(JSON.parse(event.newValue));
+                    } catch (e) {
+                        setUser(null);
+                    }
+                } else {
+                    setUser(null);
+                }
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, []);
+
     const checkUserLoggedIn = async () => {
         try {
             const storedUser = localStorage.getItem('userInfo');

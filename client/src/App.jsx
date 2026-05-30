@@ -8,6 +8,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import GuardDashboard from './pages/GuardDashboard';
 import ProfilePage from './pages/ProfilePage';
+import ZoneMapPage from './pages/ZoneMapPage';
 
 function App() {
   const routes = useRoutes([
@@ -22,6 +23,7 @@ function App() {
       children: [
         { path: "admin", element: <AdminDashboard /> },
         { path: "student", element: <StudentDashboard /> },
+        { path: "student/zone/:zoneId", element: <ZoneMapPage /> },
         { path: "guard", element: <GuardDashboard /> },
         { path: "profile", element: <ProfilePage /> },
         // Fallback or alias for old dashboard link
